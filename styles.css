@@ -556,6 +556,17 @@ main section {
   will-change: transform;
 }
 
+/* Keep hero hidden until hydrant asset fully decodes. */
+html.hero-assets-pending .center-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.hero-assets-loaded .center-content {
+  opacity: 1;
+  transition: opacity 120ms linear;
+}
+
 .red-square-wrapper {
   position: relative;
   width: 150px;
