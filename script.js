@@ -904,11 +904,62 @@ function setupHoverEffect() {
     // Disable hover if interactions are disabled or square hasn't reached pulsing state
     if (interactionsDisabled || !canClick) return;
     createStarBurst();
+    
+    // Get current computed transform for both square and hydrant
+    const squareStyle = window.getComputedStyle(redSquare);
+    const hydrantStyle = window.getComputedStyle(hydrant);
+    const squareMatrix = squareStyle.transform;
+    const hydrantMatrix = hydrantStyle.transform;
+    
+    // Pause animations
+    redSquare.style.animationPlayState = 'paused';
+    hydrant.style.animationPlayState = 'paused';
+    
+    // Get current scale for square
+    let currentSquareScale = 1;
+    if (squareMatrix && squareMatrix !== 'none') {
+      const matrix = squareMatrix.match(/matrix\(([^)]+)\)/);
+      if (matrix) {
+        const values = matrix[1].split(',');
+        const a = parseFloat(values[0]);
+        const b = parseFloat(values[1]);
+        currentSquareScale = Math.sqrt(a * a + b * b);
+      }
+    }
+    
+    // Get current scale for hydrant
+    let currentHydrantScale = 1.15;
+    if (hydrantMatrix && hydrantMatrix !== 'none') {
+      const matrix = hydrantMatrix.match(/matrix\(([^)]+)\)/);
+      if (matrix) {
+        const values = matrix[1].split(',');
+        const a = parseFloat(values[0]);
+        const b = parseFloat(values[1]);
+        currentHydrantScale = Math.sqrt(a * a + b * b);
+      }
+    }
+    
+    // Apply smooth scale increase from current position for both
+    redSquare.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    hydrant.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    redSquare.style.transform = `translate(-50%, -50%) scale(${currentSquareScale * 1.15})`;
+    hydrant.style.transform = `translate(-50%, -50%) scale(${currentHydrantScale * 1.13})`;
   });
   
   centerContent.addEventListener('mouseleave', () => {
     // Disable hover if interactions are disabled or square hasn't reached pulsing state
     if (interactionsDisabled || !canClick) return;
+    // Resume animations smoothly
+    redSquare.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    hydrant.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    
+    // Remove inline transform to resume animation
+    setTimeout(() => {
+      redSquare.style.transform = '';
+      hydrant.style.transform = '';
+      redSquare.style.animationPlayState = 'running';
+      hydrant.style.animationPlayState = 'running';
+    }, 50);
   });
   
   // Click handler - red square grows to fill screen
@@ -934,27 +985,39 @@ function setupHoverEffect() {
       clickHint.style.display = 'none';
     }
     
-    // Lock current render state before transitions start.
+    // CRITICAL: Get EXACT current transform states for BOTH square and hydrant BEFORE stopping animations
+    // This captures the exact size they are at the moment of click (could be any size due to pulsing/hover)
     const squareStyle = window.getComputedStyle(redSquare);
+    const hydrantStyle = window.getComputedStyle(hydrant);
     const squareTransform = squareStyle.transform;
+    const hydrantTransform = hydrantStyle.transform;
     
     let currentSquareScale = 1;
+    let currentHydrantScale = 1.15;
     
-    // Calculate current square scale from transform matrix.
+    // Calculate EXACT current scale for square from transform matrix
     if (squareTransform && squareTransform !== 'none') {
       const matrix = squareTransform.match(/matrix\(([^)]+)\)/);
       if (matrix) {
         const values = matrix[1].split(',');
         const a = parseFloat(values[0]);
         const b = parseFloat(values[1]);
+        // Calculate scale from matrix: sqrt(a^2 + b^2)
         currentSquareScale = Math.sqrt(a * a + b * b);
       }
     }
-
-    // Preserve exact pixel width so the hydrant stays crisp and centered after click.
-    const hydrantRect = hydrant.getBoundingClientRect();
-    const computedHydrantWidth = parseFloat(window.getComputedStyle(hydrant).width);
-    const hydrantLockedWidth = Math.max(1, Math.round(hydrantRect.width || computedHydrantWidth || 130));
+    
+    // Calculate EXACT current scale for hydrant from transform matrix
+    if (hydrantTransform && hydrantTransform !== 'none') {
+      const matrix = hydrantTransform.match(/matrix\(([^)]+)\)/);
+      if (matrix) {
+        const values = matrix[1].split(',');
+        const a = parseFloat(values[0]);
+        const b = parseFloat(values[1]);
+        // Calculate scale from matrix: sqrt(a^2 + b^2)
+        currentHydrantScale = Math.sqrt(a * a + b * b);
+      }
+    }
     
     // Stop ALL animations permanently
     redSquare.style.animation = 'none';
@@ -967,22 +1030,21 @@ function setupHoverEffect() {
     redSquare.style.pointerEvents = 'none';
     redSquare.style.cursor = 'default';
     
-    // Preserve square transform to prevent snapping.
+    // Preserve exact current transforms to prevent snapping
+    // CRITICAL: Use the exact transform string to preserve position
     if (squareTransform && squareTransform !== 'none') {
       redSquare.style.transform = squareTransform;
     } else {
       redSquare.style.transform = `translate(-50%, -50%) scale(${currentSquareScale})`;
     }
-
-    // Keep hydrant anchored in the center on click to avoid drift.
-    hydrant.style.transition = 'none';
-    hydrant.style.left = '50%';
-    hydrant.style.top = '50%';
-    hydrant.style.transform = 'translate(-50%, -50%)';
-    hydrant.style.width = `${hydrantLockedWidth}px`;
-    hydrant.style.height = 'auto';
-    hydrant.style.opacity = '1';
-    hydrant.style.visibility = 'visible';
+    
+    // CRITICAL: Preserve the EXACT hydrant transform (including translate) from click position
+    // This ensures it grows from exactly where it was when clicked
+    if (hydrantTransform && hydrantTransform !== 'none') {
+      hydrant.style.transform = hydrantTransform;
+    } else {
+      hydrant.style.transform = `translate(-50%, -50%) scale(${currentHydrantScale})`;
+    }
     
     // Calculate target scales based on EXACT current sizes
     // Square: needs to fill screen from its current size
@@ -993,24 +1055,83 @@ function setupHoverEffect() {
     // Square base size is 150px, so target = (diagonal / 150) * 1.3
     const targetSquareScale = (diagonal / 150) * 1.3;
     
-    // Remove any existing transitions first.
-    redSquare.style.transition = 'none';
+    // Hydrant: needs to be 2x its EXACT current size (whatever it is at click moment)
+    const targetHydrantScale = currentHydrantScale * 2;
     
-    // Force reflow to lock styles.
+    // Prepare hydrant target transform - preserve translate, update scale
+    let hydrantTargetTransform;
+    if (hydrantTransform && hydrantTransform !== 'none') {
+      // Extract translate values to preserve position
+      const translateMatch = hydrantTransform.match(/translate\(([^)]+)\)/);
+      if (translateMatch) {
+        const translateValues = translateMatch[1];
+        hydrantTargetTransform = `translate(${translateValues}) scale(${targetHydrantScale})`;
+      } else {
+        // Fallback to center if no translate found
+        hydrantTargetTransform = `translate(-50%, -50%) scale(${targetHydrantScale})`;
+      }
+    } else {
+      // Default center position
+      hydrantTargetTransform = `translate(-50%, -50%) scale(${targetHydrantScale})`;
+    }
+    
+    // CRITICAL: Remove any existing transitions FIRST
+    redSquare.style.transition = 'none';
+    hydrant.style.transition = 'none';
+    
+    // CRITICAL: Set transforms to EXACT current state to prevent any snapping
+    // This ensures we start from the exact position/size they are at click moment
+    if (squareTransform && squareTransform !== 'none') {
+      redSquare.style.transform = squareTransform;
+    } else {
+      redSquare.style.transform = `translate(-50%, -50%) scale(${currentSquareScale})`;
+    }
+    
+    if (hydrantTransform && hydrantTransform !== 'none') {
+      hydrant.style.transform = hydrantTransform;
+    } else {
+      hydrant.style.transform = `translate(-50%, -50%) scale(${currentHydrantScale})`;
+    }
+    
+    // Force multiple reflows to ensure browser has locked in the current state
+    void redSquare.offsetWidth;
+    void hydrant.offsetWidth;
+    void redSquare.offsetHeight;
+    void hydrant.offsetHeight;
     void redSquare.offsetWidth;
     void hydrant.offsetWidth;
     
-    // Enable hardware acceleration for square animation.
+    // Verify the transforms are exactly what we set
+    const verifySquare = window.getComputedStyle(redSquare).transform;
+    const verifyHydrant = window.getComputedStyle(hydrant).transform;
+    
+    if (verifySquare && verifySquare !== 'none' && verifySquare !== squareTransform) {
+      redSquare.style.transform = squareTransform;
+      void redSquare.offsetWidth;
+    }
+    
+    if (verifyHydrant && verifyHydrant !== 'none' && verifyHydrant !== hydrantTransform) {
+      hydrant.style.transform = hydrantTransform;
+      void hydrant.offsetWidth;
+    }
+    
+    // Enable hardware acceleration for smooth performance
     redSquare.style.willChange = 'transform';
-    hydrant.style.willChange = 'auto';
+    hydrant.style.willChange = 'transform';
     
-    // Apply smooth growth transition for square only.
+    // Apply smooth accelerated growth transitions
+    // Using a perfectly smooth ease-in curve for continuous acceleration without halting
+    // cubic-bezier(0.25, 0.1, 0.25, 1) provides very smooth acceleration from slow to fast
     redSquare.style.transition = 'transform 6s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    hydrant.style.transition = 'transform 3s cubic-bezier(0.4, 0, 0.2, 1)';
     
-    // Trigger square growth after layout settles.
+    // Ensure browser has processed initial state, then trigger smooth animation
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        // Apply target transforms - browser will smoothly interpolate from current to target
+        // This creates a continuous, smooth animation without halting
         redSquare.style.transform = `translate(-50%, -50%) scale(${targetSquareScale})`;
+        hydrant.style.transform = hydrantTargetTransform;
       });
     });
     
@@ -1019,22 +1140,34 @@ function setupHoverEffect() {
       showFinalScreen();
     }, 2000);
     
-    // After animation completes, lock visual state.
+    // After animations complete, lock both in permanently
     setTimeout(() => {
+      // Lock square at full screen
       redSquare.style.transition = 'none';
       redSquare.style.transform = `translate(-50%, -50%) scale(${targetSquareScale})`;
       redSquare.style.opacity = '1';
       redSquare.style.visibility = 'visible';
-      redSquare.style.zIndex = '9998';
+      redSquare.style.zIndex = '9998'; // Below hydrant
       redSquare.style.willChange = 'auto';
       
+      // Lock hydrant at 2x size from its exact position - ensure it stays on top
       hydrant.style.transition = 'none';
-      hydrant.style.transform = 'translate(-50%, -50%)';
-      hydrant.style.width = `${hydrantLockedWidth}px`;
+      const finalHydrantTransform = window.getComputedStyle(hydrant).transform;
+      if (finalHydrantTransform && finalHydrantTransform !== 'none') {
+        hydrant.style.transform = finalHydrantTransform;
+      } else {
+        // Fallback
+        const translateMatch = hydrantTransform && hydrantTransform.match(/translate\(([^)]+)\)/);
+        if (translateMatch) {
+          hydrant.style.transform = `translate(${translateMatch[1]}) scale(${targetHydrantScale})`;
+        } else {
+          hydrant.style.transform = `translate(-50%, -50%) scale(${targetHydrantScale})`;
+        }
+      }
       hydrant.style.animation = 'none';
       hydrant.style.opacity = '1';
       hydrant.style.visibility = 'visible';
-      hydrant.style.zIndex = '10000';
+      hydrant.style.zIndex = '10000'; // Higher than square to stay on top
       hydrant.style.display = 'block';
       hydrant.style.willChange = 'auto';
       
@@ -1045,7 +1178,7 @@ function setupHoverEffect() {
         wrapper.style.overflow = 'visible';
       }
       
-    }, 6000);
+    }, 6000); // Wait for longest animation (square at 6s)
   };
   
   // Add multiple event listeners to ensure click always works
@@ -1058,81 +1191,17 @@ function setupHoverEffect() {
   });
 }
 
-function preloadHeroAssets() {
-  const preloadSrc = (src) => new Promise((resolve) => {
-    const img = new Image();
-    const finish = () => resolve();
-    img.onload = () => {
-      if (img.decode) {
-        img.decode().then(finish).catch(finish);
-      } else {
-        finish();
-      }
-    };
-    img.onerror = finish;
-    img.src = src;
-  });
-
-  const waitForElementDecode = (selector) => new Promise((resolve) => {
-    const el = document.querySelector(selector);
-    if (!el) return resolve();
-    const done = () => resolve();
-    if (el.complete && el.naturalWidth > 0) {
-      if (el.decode) {
-        el.decode().then(done).catch(done);
-      } else {
-        done();
-      }
-      return;
-    }
-    el.addEventListener('load', () => {
-      if (el.decode) {
-        el.decode().then(done).catch(done);
-      } else {
-        done();
-      }
-    }, { once: true });
-    el.addEventListener('error', done, { once: true });
-  });
-
-  // Gate hero start on the actual hero hydrant image decode.
-  return Promise.all([
-    preloadSrc('hydrant.png'),
-    preloadSrc('a.png'),
-    waitForElementDecode('.center-hydrant'),
-  ]);
-}
-
 // Start the app when DOM is ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     createStars();
+    setupHoverEffect();
     init();
-    preloadHeroAssets().finally(() => {
-      // Give browser two paint frames after decode so the hydrant renders crisp before intro starts.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          document.documentElement.classList.remove('hero-assets-pending');
-          document.documentElement.classList.add('hero-assets-loaded');
-          document.documentElement.classList.add('hero-ready');
-          setupHoverEffect();
-        });
-      });
-    });
   });
 } else {
   createStars();
+  setupHoverEffect();
   init();
-  preloadHeroAssets().finally(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.documentElement.classList.remove('hero-assets-pending');
-        document.documentElement.classList.add('hero-assets-loaded');
-        document.documentElement.classList.add('hero-ready');
-        setupHoverEffect();
-      });
-    });
-  });
 }
 
 /* ============================================================================
@@ -1206,7 +1275,7 @@ function showFinalScreen() {
   // Don't change top/left position, just increase scale
   const newScale = currentScale * 1.2; // Grow by 20% more
   hydrant.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-  hydrant.style.willChange = 'auto';
+  hydrant.style.willChange = 'transform';
   
   requestAnimationFrame(() => {
     // Keep current position, just increase scale
@@ -1675,16 +1744,9 @@ function showHydrantMenu() {
   // Position and show the menu dropdown to the right of the hydrant (185px / 2 = 92.5px + spacing)
   if (hydrantMenuDropdown) {
     hydrantMenuDropdown.style.position = 'fixed';
-    if (window.innerWidth <= 768) {
-      // On mobile, place dropdown below icon and center it to avoid clipping.
-      hydrantMenuDropdown.style.left = '50%';
-      hydrantMenuDropdown.style.top = `${Math.round(hydrantCenterY + 118)}px`;
-      hydrantMenuDropdown.style.transform = 'translateX(-50%)';
-    } else {
-      hydrantMenuDropdown.style.left = `${hydrantCenterX + 110}px`; // To the right of the square
-      hydrantMenuDropdown.style.top = `${hydrantCenterY}px`;
-      hydrantMenuDropdown.style.transform = 'translateY(-50%)';
-    }
+    hydrantMenuDropdown.style.left = `${hydrantCenterX + 110}px`; // To the right of the square
+    hydrantMenuDropdown.style.top = `${hydrantCenterY}px`;
+    hydrantMenuDropdown.style.transform = 'translateY(-50%)';
     hydrantMenuDropdown.style.zIndex = '10004';
     hydrantMenuDropdown.style.display = 'flex';
   }
