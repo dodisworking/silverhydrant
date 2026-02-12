@@ -638,7 +638,7 @@ main section {
 
 /* Disable hover effects during initial 3 seconds */
 .center-content.hover-disabled {
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .center-content:not(.hover-disabled):hover {
@@ -654,7 +654,7 @@ main section {
 }
 
 .center-hydrant {
-  width: 130px;
+  width: 440px;
   height: auto;
   display: block;
   -webkit-user-drag: none;
@@ -664,9 +664,9 @@ main section {
   animation: hydrantEnter 3.28s cubic-bezier(0.4, 0, 0.2, 1) forwards,
              hydrantPosition 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards 3.28s,
              hydrantPulse 3.69s ease-in-out infinite 4.28s;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  will-change: auto;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
   pointer-events: none;
   position: absolute;
   top: 50%;
@@ -675,6 +675,8 @@ main section {
   z-index: 3;
   visibility: visible;
   transition: top 2s cubic-bezier(0.4, 0, 0.2, 1), transform 2s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: none;
+  image-rendering: auto;
 }
 
 @keyframes squareEnter {
@@ -715,29 +717,29 @@ main section {
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(0.2953125);
     opacity: 1;
   }
 }
 
 @keyframes hydrantPosition {
   0% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(0.2953125);
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.6); /* Match pulse animation start */
+    transform: translate(-50%, -50%) scale(0.4725); /* Visual match for previous 1.6 scale */
   }
 }
 
 @keyframes hydrantPulse {
   0% {
-    transform: translate(-50%, -50%) scale(1.6); /* Larger when box is at scale(1) */
+    transform: translate(-50%, -50%) scale(0.4725); /* Larger when box is at scale(1) */
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.0); /* Smaller when box grows to scale(1.15) */
+    transform: translate(-50%, -50%) scale(0.2953125); /* Smaller when box grows to scale(1.15) */
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.6); /* Larger when box shrinks back to scale(1) */
+    transform: translate(-50%, -50%) scale(0.4725); /* Larger when box shrinks back to scale(1) */
   }
 }
 
@@ -749,7 +751,7 @@ main section {
   }
   
   .center-hydrant {
-    width: 110px;
+    width: 220px;
   }
 }
 
@@ -1047,8 +1049,8 @@ main section {
   padding: 16px 24px;
   border-radius: 24px;
   font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.5;
   max-width: 85%;
   word-wrap: break-word;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
@@ -1060,8 +1062,8 @@ main section {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-bottom-left-radius: 6px;
-  font-size: 14px;
-  padding: 12px 18px;
+  font-size: 13px;
+  padding: 10px 16px;
   max-width: 85%;
   margin-left: 7.5%;
 }
@@ -1074,6 +1076,8 @@ main section {
   border-bottom-left-radius: 6px;
   margin: 0 auto;
   max-width: 85%;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .chat-ai .chat-bubble strong {
@@ -1701,11 +1705,16 @@ main section {
 
 /* Keep custom offering icons small like the original icon style. */
 .offering-icon-image {
+  --offeringIconSize: calc(20px * var(--offeringIconScale));
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(20px * var(--offeringIconScale));
-  height: calc(20px * var(--offeringIconScale));
+  width: var(--offeringIconSize);
+  height: var(--offeringIconSize);
+  min-width: var(--offeringIconSize);
+  min-height: var(--offeringIconSize);
+  max-width: var(--offeringIconSize);
+  max-height: var(--offeringIconSize);
   transform: translate(-50%, -50%);
   transform-origin: center center;
   object-fit: contain;
@@ -1999,13 +2008,6 @@ main section {
   animation: offeringBoxTitlePulse 3.69s ease-in-out infinite;
   transform-origin: center center;
   padding: 0;
-}
-
-@media (max-width: 768px) {
-  .offering-icon-image {
-    width: 18px;
-    height: 18px;
-  }
 }
 
 /* Titles inside squares - all offerings */
@@ -2405,17 +2407,7 @@ main section {
   pointer-events: auto;
 }
 
-/* In "What we can do" context, keep only Home, Founders, Contact. */
-.menu-controller.wcd-context .menu-item[data-action="who-are-we"],
-.menu-controller.wcd-context .menu-item[data-action="offerings"] {
-  display: none;
-}
-
-/* In Founders context, keep only Home, What we can do, Contact. */
-.menu-controller.founders-context .menu-item[data-action="who-are-we"],
-.menu-controller.founders-context .menu-item[data-action="founders"] {
-  display: none;
-}
+/* Keep the same three menu options in every context. */
 
 /* Keep star field clipped cleanly inside founders menu square. */
 .menu-controller.founders-context .menu-square {
@@ -2645,6 +2637,7 @@ main section {
 .hydrant-hover-zone {
   display: none;
   cursor: pointer;
+  z-index: 10005;
   /* Debug: uncomment to see the zone */
   /* background: rgba(255, 0, 0, 0.2); */
 }
@@ -2666,7 +2659,7 @@ main section {
   flex-direction: column;
   gap: 12px;
   align-items: flex-start;
-  z-index: 10004;
+  z-index: 10006;
   width: auto;
   pointer-events: none;
 }
@@ -2754,6 +2747,201 @@ main section {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.6);
   transform: translateX(5px) !important;
+}
+
+/* Home page 2 fail-safe menu shown on hover from center icon */
+.home2-menu-overlay {
+  position: fixed;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  z-index: 12000;
+  pointer-events: none;
+}
+
+.home2-menu-overlay.show {
+  display: flex;
+  pointer-events: auto;
+}
+
+.home2-menu-item {
+  appearance: none;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
+  white-space: nowrap;
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+.home2-menu-overlay.show .home2-menu-item:nth-child(1) {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.05s;
+}
+
+.home2-menu-overlay.show .home2-menu-item:nth-child(2) {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.12s;
+}
+
+.home2-menu-overlay.show .home2-menu-item:nth-child(3) {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.19s;
+}
+
+.home2-menu-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateX(5px) !important;
+}
+
+/* ============================================
+   HOME 3 (fresh rebuild)
+   ============================================ */
+
+.home3-root {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 13000;
+}
+
+.home3-icon {
+  width: 140px;
+  height: 140px;
+  background: #000;
+  border: 1px solid #de2d10;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  animation: home3SquarePulse 3.69s ease-in-out infinite;
+}
+
+.home3-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  animation: home3StarsCounterPulse 3.69s ease-in-out infinite;
+}
+
+.home3-star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.95;
+}
+
+.home3-hydrant {
+  width: 112px;
+  height: auto;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: center center;
+  animation: home3HydrantPulse 3.69s ease-in-out infinite;
+}
+
+.home3-icon.services-exit {
+  animation: home3SquareShrinkForServices 420ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.home3-icon.services-exit .home3-hydrant {
+  animation: home3HydrantGrowForServices 420ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.home3-icon.services-exit .home3-stars {
+  animation: home3StarsCounterForServices 420ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.home3-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home3-btn {
+  appearance: none;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+              box-shadow 0.18s ease,
+              border-color 0.18s ease,
+              background 0.18s ease;
+}
+
+.home3-btn:hover {
+  transform: translateY(-1px) scale(1.04);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+}
+
+.home3-btn:active {
+  transform: translateY(0) scale(0.985);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.26);
+}
+
+@keyframes home3SquarePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.92); }
+}
+
+@keyframes home3HydrantPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.13); }
+}
+
+@keyframes home3StarsCounterPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.087); }
+}
+
+@keyframes home3SquareShrinkForServices {
+  0% { transform: scale(1); }
+  100% { transform: scale(0.78); }
+}
+
+@keyframes home3HydrantGrowForServices {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.22); }
+}
+
+@keyframes home3StarsCounterForServices {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.282); }
 }
 
 @media (max-width: 768px) {

@@ -285,6 +285,42 @@ const timing = {
   crossfade: getTimingMs("--crossfade", 600),
 };
 
+// Render hydrant from a larger base texture and map logical scale -> render scale.
+const HYDRANT_RENDER_SCALE = 0.2953125;
+function toHydrantRenderScale(logicalScale) {
+  return logicalScale * HYDRANT_RENDER_SCALE;
+}
+function parseHydrantLogicalScale(transformValue, fallbackLogical = 1.15) {
+  if (!transformValue || transformValue === 'none') return fallbackLogical;
+  const matrix = transformValue.match(/matrix\(([^)]+)\)/);
+  if (!matrix) return fallbackLogical;
+  const values = matrix[1].split(',');
+  const a = parseFloat(values[0]);
+  const b = parseFloat(values[1]);
+  const actualScale = Math.sqrt(a * a + b * b);
+  return actualScale / HYDRANT_RENDER_SCALE;
+}
+function buildHydrantTransform(logicalScale) {
+  return `translate(-50%, -50%) scale(${toHydrantRenderScale(logicalScale)})`;
+}
+function buildHydrantTransformWithTranslate(translateValues, logicalScale) {
+  return `translate(${translateValues}) scale(${toHydrantRenderScale(logicalScale)})`;
+}
+function applyCenterHydrantHdMode(hydrantEl) {
+  if (!hydrantEl) return;
+  // Keep one high-quality source/settings through breathing -> click -> Ask AI states.
+  if (hydrantEl.getAttribute('src') !== 'a.png') {
+    hydrantEl.setAttribute('src', 'a.png');
+  }
+  hydrantEl.setAttribute('decoding', 'sync');
+  hydrantEl.setAttribute('fetchpriority', 'high');
+  hydrantEl.setAttribute('loading', 'eager');
+  hydrantEl.style.width = '440px';
+  hydrantEl.style.height = 'auto';
+  hydrantEl.style.imageRendering = 'auto';
+  hydrantEl.style.filter = 'none';
+}
+
 /* ============================================================================
    DOM ELEMENTS
    ============================================================================ */
@@ -876,6 +912,7 @@ function setupHoverEffect() {
   if (!centerContent || !redSquare || !hydrant) {
     return;
   }
+  applyCenterHydrantHdMode(hydrant);
   
   // Disable hover effects for the first 3 seconds
   centerContent.classList.add('hover-disabled');
@@ -885,6 +922,22 @@ function setupHoverEffect() {
   let canClick = false;
   let hasGrown = false; // Track if square has already grown to full screen
   let interactionsDisabled = false; // Track if all interactions should be disabled
+
+  // Expose a safe reset hook so returning Home can re-enable the full click -> Ask AI flow.
+  window.__resetCenterInteraction = () => {
+    canClick = true;
+    hasGrown = false;
+    interactionsDisabled = false;
+    centerContent.style.pointerEvents = 'auto';
+    redSquare.style.pointerEvents = 'auto';
+    redSquare.style.cursor = 'pointer';
+    redSquare.style.animationPlayState = 'running';
+    hydrant.style.animationPlayState = 'running';
+    redSquare.style.transition = '';
+    hydrant.style.transition = '';
+    redSquare.style.transform = '';
+    hydrant.style.transform = '';
+  };
   
   // Enable hover and clicking after 3 seconds (initial animation period)
   setTimeout(() => {
@@ -928,22 +981,13 @@ function setupHoverEffect() {
     }
     
     // Get current scale for hydrant
-    let currentHydrantScale = 1.15;
-    if (hydrantMatrix && hydrantMatrix !== 'none') {
-      const matrix = hydrantMatrix.match(/matrix\(([^)]+)\)/);
-      if (matrix) {
-        const values = matrix[1].split(',');
-        const a = parseFloat(values[0]);
-        const b = parseFloat(values[1]);
-        currentHydrantScale = Math.sqrt(a * a + b * b);
-      }
-    }
+    let currentHydrantScale = parseHydrantLogicalScale(hydrantMatrix, 1.15);
     
     // Apply smooth scale increase from current position for both
     redSquare.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
     hydrant.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
     redSquare.style.transform = `translate(-50%, -50%) scale(${currentSquareScale * 1.15})`;
-    hydrant.style.transform = `translate(-50%, -50%) scale(${currentHydrantScale * 1.13})`;
+    hydrant.style.transform = buildHydrantTransform(currentHydrantScale * 1.13);
   });
   
   centerContent.addEventListener('mouseleave', () => {
@@ -963,14 +1007,9 @@ function setupHoverEffect() {
   });
   
   // Click handler - red square grows to fill screen
-  const handleSquareClick = (e) => {
+  const handleSquareClick = (e, force = false) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    // Don't allow click if initial animation hasn't completed
-    if (!canClick) {
-      return;
-    }
     
     // Don't allow click if already grown
     if (hasGrown) {
@@ -978,6 +1017,7 @@ function setupHoverEffect() {
     }
     hasGrown = true;
     interactionsDisabled = true; // Disable all interactions after click
+    applyCenterHydrantHdMode(hydrant);
     
     // Instantly hide click hint
     const clickHint = document.getElementById('clickHint');
@@ -1008,16 +1048,7 @@ function setupHoverEffect() {
     }
     
     // Calculate EXACT current scale for hydrant from transform matrix
-    if (hydrantTransform && hydrantTransform !== 'none') {
-      const matrix = hydrantTransform.match(/matrix\(([^)]+)\)/);
-      if (matrix) {
-        const values = matrix[1].split(',');
-        const a = parseFloat(values[0]);
-        const b = parseFloat(values[1]);
-        // Calculate scale from matrix: sqrt(a^2 + b^2)
-        currentHydrantScale = Math.sqrt(a * a + b * b);
-      }
-    }
+    currentHydrantScale = parseHydrantLogicalScale(hydrantTransform, 1.15);
     
     // Stop ALL animations permanently
     redSquare.style.animation = 'none';
@@ -1043,7 +1074,7 @@ function setupHoverEffect() {
     if (hydrantTransform && hydrantTransform !== 'none') {
       hydrant.style.transform = hydrantTransform;
     } else {
-      hydrant.style.transform = `translate(-50%, -50%) scale(${currentHydrantScale})`;
+      hydrant.style.transform = buildHydrantTransform(currentHydrantScale);
     }
     
     // Calculate target scales based on EXACT current sizes
@@ -1065,14 +1096,14 @@ function setupHoverEffect() {
       const translateMatch = hydrantTransform.match(/translate\(([^)]+)\)/);
       if (translateMatch) {
         const translateValues = translateMatch[1];
-        hydrantTargetTransform = `translate(${translateValues}) scale(${targetHydrantScale})`;
+        hydrantTargetTransform = buildHydrantTransformWithTranslate(translateValues, targetHydrantScale);
       } else {
         // Fallback to center if no translate found
-        hydrantTargetTransform = `translate(-50%, -50%) scale(${targetHydrantScale})`;
+        hydrantTargetTransform = buildHydrantTransform(targetHydrantScale);
       }
     } else {
       // Default center position
-      hydrantTargetTransform = `translate(-50%, -50%) scale(${targetHydrantScale})`;
+      hydrantTargetTransform = buildHydrantTransform(targetHydrantScale);
     }
     
     // CRITICAL: Remove any existing transitions FIRST
@@ -1090,7 +1121,7 @@ function setupHoverEffect() {
     if (hydrantTransform && hydrantTransform !== 'none') {
       hydrant.style.transform = hydrantTransform;
     } else {
-      hydrant.style.transform = `translate(-50%, -50%) scale(${currentHydrantScale})`;
+      hydrant.style.transform = buildHydrantTransform(currentHydrantScale);
     }
     
     // Force multiple reflows to ensure browser has locked in the current state
@@ -1159,9 +1190,9 @@ function setupHoverEffect() {
         // Fallback
         const translateMatch = hydrantTransform && hydrantTransform.match(/translate\(([^)]+)\)/);
         if (translateMatch) {
-          hydrant.style.transform = `translate(${translateMatch[1]}) scale(${targetHydrantScale})`;
+          hydrant.style.transform = buildHydrantTransformWithTranslate(translateMatch[1], targetHydrantScale);
         } else {
-          hydrant.style.transform = `translate(-50%, -50%) scale(${targetHydrantScale})`;
+          hydrant.style.transform = buildHydrantTransform(targetHydrantScale);
         }
       }
       hydrant.style.animation = 'none';
@@ -1185,10 +1216,20 @@ function setupHoverEffect() {
   redSquare.addEventListener('click', handleSquareClick);
   redSquare.addEventListener('touchend', handleSquareClick); // For mobile
   centerContent.addEventListener('click', (e) => {
-    if (e.target === redSquare || e.target.closest('.red-square')) {
-      handleSquareClick(e);
-    }
+    handleSquareClick(e);
   });
+
+  // Allow other centered overlays (like hydrant menu icon) to trigger the same flow.
+  window.__triggerMainReveal = () => {
+    handleSquareClick(
+      {
+        stopPropagation: () => {},
+        preventDefault: () => {},
+        target: redSquare,
+      },
+      true
+    );
+  };
 }
 
 // Start the app when DOM is ready
@@ -1208,9 +1249,37 @@ if (document.readyState === "loading") {
    FINAL SCREEN - HYDANT MOVES UP AND CHAT INTERFACE
    ============================================================================ */
 
-const AI_RESPONSE_TEXT = `Silver Hydrant is a team of consultants inspired by the story of Beverly Hills painting their fire hydrants silver so firefighters could instantly spot what mattered most and save time when lives were on the line. That same philosophy guides how they approach AI, advertising, marketing, production, web product development, software development, and data research today. Instead of adding noise, they focus on highlighting the critical moments, systems, and decisions that create real impact. Silver Hydrant helps brands apply AI with intention, clarity, and purpose painting what matters most to streamline processes, improve efficiency, and enable companies to move faster, communicate smarter, and drive meaningful, positive change in the world.`;
+const AI_RESPONSE_TEXT = `Silver Hydrant is a team of consultants inspired by a simple but powerful idea.
+In Beverly Hills, fire hydrants were painted silver so firefighters could instantly spot what mattered most when lives were on the line. That same philosophy guides how we approach AI consulting today.
+In a world flooded with noise, hype, and endless tools, we focus on clarity. We identify the leverage points. We spotlight the systems and decisions that actually move the needle.
+Silver Hydrant helps brands apply AI with precision and purpose to streamline operations, unlock efficiency, and create real competitive advantage.
+We do not add complexity.
+We remove it.
+We paint what matters.`;
 
-const AI_RESPONSE_TEXT_FORMATTED = `Silver Hydrant is a team of <strong>consultants</strong> inspired by the story of Beverly Hills painting their fire hydrants <strong>silver</strong> so firefighters could instantly spot what <strong>mattered most</strong> and save time when lives were on the line. That same <strong>philosophy</strong> guides how they approach <strong>AI, advertising, marketing, production, web product development, software development, and data research</strong> today. Instead of adding noise, they focus on highlighting the <strong>critical moments, systems, and decisions</strong> that create <strong>real impact</strong>. Silver Hydrant helps brands apply <strong>AI with intention, clarity, and purpose</strong> painting what <strong>matters most</strong> to <strong>streamline processes, improve efficiency</strong>, and enable companies to <strong>move faster, communicate smarter</strong>, and drive <strong>meaningful, positive change</strong> in the world.`;
+const AI_RESPONSE_TEXT_FORMATTED = `<strong>Silver Hydrant</strong> is a team of consultants inspired by a <strong>simple but powerful idea</strong>.<br><br>
+In Beverly Hills, fire hydrants were painted silver so firefighters could instantly spot what <strong>mattered most</strong> when lives were on the line. That same <strong>philosophy</strong> guides how we approach <strong>AI consulting</strong> today.<br><br>
+In a world flooded with noise, hype, and endless tools, we focus on <strong>clarity</strong>. We identify the <strong>leverage points</strong>. We spotlight the systems and decisions that actually <strong>move the needle</strong>.<br><br>
+Silver Hydrant helps brands apply AI with <strong>precision and purpose</strong> to streamline operations, unlock efficiency, and create real <strong>competitive advantage</strong>.<br><br>
+<strong>We do not add complexity.</strong><br>
+<strong>We remove it.</strong><br>
+<strong>We paint what matters.</strong>`;
+
+let askAiButtonYOffset = -43;
+let askMenuAutoOpenTimer = null;
+
+function updateAskAiButtonPosition() {
+  const askAiBtn = document.getElementById('askAiBtn');
+  const hydrant = document.querySelector('.center-hydrant');
+  if (!askAiBtn || !hydrant) return;
+  const hydrantRect = hydrant.getBoundingClientRect();
+  const hydrantBottom = hydrantRect.bottom;
+  const hydrantCenterX = hydrantRect.left + hydrantRect.width / 2;
+  askAiBtn.style.position = 'fixed';
+  askAiBtn.style.top = `${hydrantBottom + askAiButtonYOffset}px`;
+  askAiBtn.style.left = `${hydrantCenterX}px`;
+  askAiBtn.style.transform = 'translateX(-50%)';
+}
 
 const CHAT_TYPE_SPEED = 15;
 
@@ -1234,6 +1303,9 @@ function typePlainText(el, text, done) {
 }
 
 function showFinalScreen() {
+  restoreDefaultBackdrop();
+  hideHome2MenuOverlay();
+  hideHome3Menu();
   const finalScreen = document.getElementById('finalScreen');
   const askAiBtn = document.getElementById('askAiBtn');
   const hydrant = document.querySelector('.center-hydrant');
@@ -1242,6 +1314,7 @@ function showFinalScreen() {
   if (!finalScreen || !askAiBtn || !hydrant) {
     return;
   }
+  applyCenterHydrantHdMode(hydrant);
   
   // Hide chat container initially
   if (chatContainer) {
@@ -1261,13 +1334,13 @@ function showFinalScreen() {
       const values = matrix[1].split(',');
       const a = parseFloat(values[0]);
       const b = parseFloat(values[1]);
-      currentScale = Math.sqrt(a * a + b * b);
+      currentScale = (Math.sqrt(a * a + b * b)) / HYDRANT_RENDER_SCALE;
     }
     
     // Try to get scale from scale() function
     const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
     if (scaleMatch) {
-      currentScale = parseFloat(scaleMatch[1]);
+      currentScale = parseFloat(scaleMatch[1]) / HYDRANT_RENDER_SCALE;
     }
   }
   
@@ -1283,12 +1356,12 @@ function showFinalScreen() {
       // Preserve any existing transform, just update scale
       const translateMatch = currentTransform.match(/translate\(([^)]+)\)/);
       if (translateMatch) {
-        hydrant.style.transform = `translate(${translateMatch[1]}) scale(${newScale})`;
+        hydrant.style.transform = buildHydrantTransformWithTranslate(translateMatch[1], newScale);
       } else {
-        hydrant.style.transform = `translate(-50%, -50%) scale(${newScale})`;
+        hydrant.style.transform = buildHydrantTransform(newScale);
       }
     } else {
-      hydrant.style.transform = `translate(-50%, -50%) scale(${newScale})`;
+      hydrant.style.transform = buildHydrantTransform(newScale);
     }
   });
   
@@ -1305,17 +1378,7 @@ function showFinalScreen() {
     
     // Position button right under the hydrant, centered
     setTimeout(() => {
-      // Get hydrant position and dimensions
-      const hydrantRect = hydrant.getBoundingClientRect();
-      const hydrantBottom = hydrantRect.bottom;
-      const hydrantCenterX = hydrantRect.left + hydrantRect.width / 2;
-      
-      // Position button right below hydrant with some spacing
-      const spacing = 30; // Space between hydrant and button
-      askAiBtn.style.position = 'fixed';
-      askAiBtn.style.top = `${hydrantBottom + spacing}px`;
-      askAiBtn.style.left = `${hydrantCenterX}px`;
-      askAiBtn.style.transform = 'translateX(-50%)';
+      updateAskAiButtonPosition();
       askAiBtn.style.opacity = '0';
       askAiBtn.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
       askAiBtn.style.display = 'block';
@@ -1377,6 +1440,30 @@ function showChatInterface() {
   const hydrant = document.querySelector('.center-hydrant');
   const navBubbles = document.getElementById('navBubbles');
   if (!chatContainer || !aiResponse || !askAiBtn) return;
+  applyCenterHydrantHdMode(hydrant);
+  if (askMenuAutoOpenTimer) {
+    clearTimeout(askMenuAutoOpenTimer);
+    askMenuAutoOpenTimer = null;
+  }
+  // If not hovered/opened within 3s after Ask click, reveal menu options automatically.
+  askMenuAutoOpenTimer = setTimeout(() => {
+    const dropdown = document.getElementById('hydrantMenuDropdown');
+    const optionsAlreadyVisible = !!(dropdown && dropdown.classList.contains('show'));
+    if (optionsAlreadyVisible) {
+      askMenuAutoOpenTimer = null;
+      return;
+    }
+
+    // Ensure the hydrant menu icon exists, then reveal its options.
+    showHydrantMenu();
+    setTimeout(() => {
+      const currentDropdown = document.getElementById('hydrantMenuDropdown');
+      if (currentDropdown && !currentDropdown.classList.contains('show')) {
+        showHydrantMenuItems();
+      }
+    }, 160);
+    askMenuAutoOpenTimer = null;
+  }, 3000);
   
   // Fade away button first
   askAiBtn.style.opacity = '0';
@@ -1394,7 +1481,7 @@ function showChatInterface() {
       if (currentTransform && currentTransform !== 'none') {
         const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
         if (scaleMatch) {
-          currentScale = parseFloat(scaleMatch[1]);
+          currentScale = parseFloat(scaleMatch[1]) / HYDRANT_RENDER_SCALE;
         }
       }
       
@@ -1406,7 +1493,7 @@ function showChatInterface() {
       requestAnimationFrame(() => {
         hydrant.style.top = targetTop;
         hydrant.style.left = '50%'; // Keep centered horizontally
-        hydrant.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
+        hydrant.style.transform = buildHydrantTransform(currentScale);
       });
     }
     
@@ -1451,7 +1538,7 @@ function startChatAnimation() {
       setTimeout(() => {
         const userMessage = chatContainer.querySelector('.chat-user');
         const userBubble = userMessage.querySelector('.chat-bubble');
-        const userMessageText = 'hello, who are Silver hydrant?';
+        const userMessageText = 'hello, what is Silver Hydrant?';
         
         // Clear the user bubble and prepare for typing
         userBubble.textContent = '';
@@ -1479,14 +1566,9 @@ function startChatAnimation() {
                 aiMessage.style.opacity = '1';
                 aiMessage.style.transform = 'translateX(0)';
                 
-                // Start typing AI response - show hydrant menu once AI starts typing
+                // Start typing AI response.
                 setTimeout(() => {
                   typeChatText(aiResponse, AI_RESPONSE_TEXT_FORMATTED);
-                  
-                  // Show hydrant menu once AI bubble starts writing (fade in smoothly)
-                  setTimeout(() => {
-                    showHydrantMenu();
-                  }, 200); // Small delay after AI typing starts
                 }, 300);
               });
             }, 400); // Tiny beat after user message finishes typing
@@ -1639,9 +1721,8 @@ function showHydrantMenu() {
   const hydrantCenterY = hydrantRect.top + hydrantRect.height / 2;
   // Start from zero so the square grows in continuously from nothing.
   const startSquareScale = 0;
-  const hydrantSettleMs = 650;
+  const hydrantSettleMs = 0;
   const hydrantSettleEasing = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
-  const oldHydrantFadeMs = 820;
   const revealDurationMs = 2100;
   const revealEasing = 'cubic-bezier(0.4, 0, 0.2, 1)';
   
@@ -1680,16 +1761,20 @@ function showHydrantMenu() {
     newHydrant.id = 'hydrantMenuImage';
     newHydrant.src = 'a.png';
     newHydrant.alt = 'Silver fire hydrant';
+    newHydrant.decoding = 'sync';
+    newHydrant.loading = 'eager';
+    newHydrant.fetchPriority = 'high';
     newHydrant.className = 'hydrant-menu-image';
     document.body.appendChild(newHydrant);
   }
   
   // Position new hydrant exactly where the old one is
   newHydrant.classList.remove('pulsing', 'hovered');
+  newHydrant.src = 'a.png';
   newHydrant.style.position = 'fixed';
   newHydrant.style.left = `${hydrantCenterX}px`;
   newHydrant.style.top = `${hydrantCenterY}px`;
-  newHydrant.style.transform = 'translate(-50%, -50%) scale(0.94)';
+  newHydrant.style.transform = 'translate(-50%, -50%) scale(1)';
   newHydrant.style.transition = 'none';
   newHydrant.style.width = `${hydrantRect.width}px`;
   newHydrant.style.height = 'auto';
@@ -1707,21 +1792,15 @@ function showHydrantMenu() {
   // Sequence: settle hydrant first, then grow the black square.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      // Keep hydrant fully opaque and transition to menu hydrant first.
-      centerHydrant.style.transition = `opacity ${oldHydrantFadeMs}ms ${hydrantSettleEasing}`;
+      // No crossfade needed: both states already use a.png.
+      centerHydrant.style.transition = 'none';
       centerHydrant.style.opacity = '1';
       newHydrant.style.zIndex = '10003';
-      newHydrant.style.transition = `transform ${hydrantSettleMs}ms ${hydrantSettleEasing}`;
+      newHydrant.style.transition = 'none';
       newHydrant.style.transform = 'translate(-50%, -50%) scale(1)';
-      // Fade old hydrant/shadow out gradually (new hydrant is already fully visible).
-      requestAnimationFrame(() => {
-        centerHydrant.style.opacity = '0';
-      });
-
-      setTimeout(() => {
-        centerHydrant.style.visibility = 'hidden';
-        centerHydrant.style.transition = 'none';
-      }, oldHydrantFadeMs + 40);
+      centerHydrant.style.opacity = '0';
+      centerHydrant.style.visibility = 'hidden';
+      centerHydrant.style.transition = 'none';
 
       // Then grow the black square as a separate smooth motion.
       setTimeout(() => {
@@ -1782,6 +1861,7 @@ function createHydrantBackgroundStars() {
 
 let hydrantMenuHideTimer = null;
 let hydrantMenuAnchor = null;
+let home2MenuHideTimer = null;
 
 function clearHydrantMenuHideTimer() {
   if (hydrantMenuHideTimer) {
@@ -1812,7 +1892,7 @@ function createHydrantHoverZone(centerX, centerY) {
   hoverZone.style.top = `${centerY - 100}px`;
   hoverZone.style.width = '200px';
   hoverZone.style.height = '200px';
-  hoverZone.style.zIndex = '10004';
+  hoverZone.style.zIndex = '10005';
   hoverZone.style.display = 'block';
   
   // Add hover listeners (overwrite so repeated setup doesn't stack listeners).
@@ -1826,6 +1906,7 @@ function createHydrantHoverZone(centerX, centerY) {
 
   const dropdown = document.getElementById('hydrantMenuDropdown');
   if (dropdown) {
+    dropdown.style.zIndex = '10006';
     dropdown.onmouseenter = () => {
       clearHydrantMenuHideTimer();
       showHydrantMenuItems();
@@ -1839,17 +1920,30 @@ function createHydrantHoverZone(centerX, centerY) {
 function showHydrantMenuItems() {
   clearHydrantMenuHideTimer();
   const dropdown = document.getElementById('hydrantMenuDropdown');
+  const hydrantImage = document.getElementById('hydrantMenuImage');
+  const blackSquare = document.getElementById('hydrantBackgroundSquare');
   if (dropdown) {
+    const anchorEl = (hydrantImage && window.getComputedStyle(hydrantImage).display !== 'none')
+      ? hydrantImage
+      : blackSquare;
+    if (anchorEl) {
+      const rect = anchorEl.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      dropdown.style.left = `${centerX + 110}px`;
+      dropdown.style.top = `${centerY}px`;
+      dropdown.style.transform = 'translateY(-50%)';
+    }
+    dropdown.style.display = 'flex';
+    dropdown.style.zIndex = '10006';
     dropdown.classList.add('show');
   }
   
   // Pause square and hydrant animation on hover
-  const blackSquare = document.getElementById('hydrantBackgroundSquare');
   if (blackSquare) {
     blackSquare.classList.add('hovered');
   }
   
-  const hydrantImage = document.getElementById('hydrantMenuImage');
   if (hydrantImage) {
     hydrantImage.classList.add('hovered');
   }
@@ -1871,6 +1965,288 @@ function hideHydrantMenuItems() {
   const hydrantImage = document.getElementById('hydrantMenuImage');
   if (hydrantImage) {
     hydrantImage.classList.remove('hovered');
+  }
+}
+
+function clearHome2MenuHideTimer() {
+  if (home2MenuHideTimer) {
+    clearTimeout(home2MenuHideTimer);
+    home2MenuHideTimer = null;
+  }
+}
+
+function hideHome2MenuOverlay() {
+  const menu = document.getElementById('home2MenuOverlay');
+  if (!menu) return;
+  menu.classList.remove('show');
+  menu.style.display = 'none';
+  menu.style.pointerEvents = 'none';
+  const items = menu.querySelectorAll('.home2-menu-item');
+  items.forEach((item) => {
+    item.style.opacity = '';
+    item.style.transform = '';
+    item.style.transition = '';
+  });
+}
+
+function scheduleHome2MenuHide() {
+  clearHome2MenuHideTimer();
+  home2MenuHideTimer = setTimeout(() => {
+    hideHome2MenuOverlay();
+  }, 180);
+}
+
+function showHome2MenuOverlay(anchorEl) {
+  const menu = document.getElementById('home2MenuOverlay');
+  if (!menu || !anchorEl) return;
+  clearHome2MenuHideTimer();
+  const rect = anchorEl.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  menu.style.left = `${centerX + 110}px`;
+  menu.style.top = `${centerY}px`;
+  menu.style.transform = 'translateY(-50%)';
+  menu.style.display = 'flex';
+  menu.style.zIndex = '12000';
+  menu.classList.add('show');
+  menu.style.pointerEvents = 'auto';
+  // Hard-force visible state so Home 2 buttons never depend on animation timing.
+  const items = menu.querySelectorAll('.home2-menu-item');
+  items.forEach((item) => {
+    item.style.transition = 'none';
+    item.style.opacity = '1';
+    item.style.transform = 'translateX(0)';
+  });
+}
+
+function hideLegacyCenterMenus() {
+  const legacyIds = ['hydrantBackgroundSquare', 'hydrantMenuImage', 'hydrantMenuDropdown', 'hydrantHoverZone'];
+  legacyIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = 'none';
+      if (id === 'hydrantMenuDropdown') {
+        el.classList.remove('show');
+      }
+    }
+  });
+}
+
+function ensureHome3UI() {
+  let root = document.getElementById('home3Root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'home3Root';
+    root.className = 'home3-root';
+    root.innerHTML = `
+      <div class="home3-icon" id="home3Icon">
+        <div class="home3-stars" id="home3Stars"></div>
+        <img class="home3-hydrant" src="a.png" alt="Silver fire hydrant" />
+      </div>
+      <div class="home3-menu">
+        <button class="home3-btn" data-action="offerings">Services</button>
+        <button class="home3-btn" data-action="founders">Founders</button>
+        <button class="home3-btn" data-action="contact">Contact</button>
+      </div>
+    `;
+    document.body.appendChild(root);
+
+    const stars = root.querySelector('#home3Stars');
+    if (stars) {
+      for (let i = 0; i < 42; i++) {
+        const s = document.createElement('div');
+        s.className = 'home3-star';
+        const size = 1 + Math.random() * 1.7;
+        s.style.width = `${size}px`;
+        s.style.height = `${size}px`;
+        s.style.left = `${Math.random() * 100}%`;
+        s.style.top = `${Math.random() * 100}%`;
+        stars.appendChild(s);
+      }
+    }
+  }
+
+  const foundersPage = document.getElementById('foundersPage');
+  const buttons = root.querySelectorAll('.home3-btn');
+  buttons.forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hideHome3Menu();
+      const action = btn.dataset.action;
+      if (action === 'offerings') {
+        triggerHome3ServicesTransition();
+        return;
+      }
+      if (action === 'founders') {
+        if (foundersPage) {
+          hideContactPage();
+          hideSpaceMask();
+          hideOfferingsBoxes();
+          foundersPage.classList.add('show');
+          document.body.style.overflow = 'hidden';
+          setTimeout(() => showMenuController('founders'), 100);
+        }
+        return;
+      }
+      if (action === 'contact') {
+        showContactPage();
+      }
+    };
+  });
+}
+
+function triggerHome3ServicesTransition() {
+  // Dedicated, deterministic Home 3 -> Services flow.
+  hideContactPage();
+  hideHome3Menu();
+  startHome3ServicesFresh();
+}
+
+function startHome3ServicesFresh() {
+  restoreDefaultBackdrop();
+
+  const spaceMask = document.getElementById('spaceMask');
+  const spaceOfferingsContainer = document.getElementById('spaceOfferingsContainer');
+  const centerHydrant = document.querySelector('.center-hydrant');
+  if (!spaceMask || !spaceOfferingsContainer) return;
+
+  // Reset everything first so each click starts from zero.
+  hideSpaceMask();
+  hideOfferingsBoxes();
+  if (centerHydrant) {
+    centerHydrant.style.visibility = 'hidden';
+    centerHydrant.style.opacity = '0';
+  }
+  const menuController = document.getElementById('menuController');
+  if (menuController) {
+    menuController.classList.remove('show', 'open', 'wcd-context', 'founders-context');
+  }
+
+  createSpaceMaskStars();
+  spaceMask.className = 'space-mask';
+  spaceOfferingsContainer.classList.remove('show');
+  const offeringBoxes = spaceOfferingsContainer.querySelectorAll('.space-offering-box');
+  offeringBoxes.forEach((box) => {
+    box.style.pointerEvents = 'none';
+  });
+
+  // Step 1: open black star window from center.
+  requestAnimationFrame(() => {
+    spaceMask.classList.add('active');
+    requestAnimationFrame(() => {
+      spaceMask.classList.add('scale-in');
+      setTimeout(() => {
+        spaceMask.classList.remove('scale-in');
+        spaceMask.classList.add('hold');
+        setTimeout(() => {
+          spaceMask.classList.remove('hold');
+          spaceMask.classList.add('expand');
+        }, 200);
+      }, 500);
+    });
+  });
+
+  // Step 2: bring in Services panels.
+  setTimeout(() => {
+    // Hard-force the window to fully open in case class timing is missed.
+    spaceMask.classList.add('active');
+    spaceMask.classList.add('expand');
+    spaceMask.style.opacity = '1';
+    spaceMask.style.clipPath = 'inset(0% 0% 0% 0%)';
+    spaceMask.style.webkitClipPath = 'inset(0% 0% 0% 0%)';
+
+    spaceOfferingsContainer.classList.add('show');
+    spaceOfferingsContainer.style.opacity = '1';
+    spaceOfferingsContainer.style.visibility = 'visible';
+    spaceOfferingsContainer.style.pointerEvents = 'auto';
+
+    // Restart panel scale-in explicitly so icons always pop in.
+    const squares = spaceOfferingsContainer.querySelectorAll('.space-offering-square');
+    squares.forEach((square) => {
+      square.style.animation = 'none';
+      square.style.transform = 'scale(0)';
+    });
+    void spaceOfferingsContainer.offsetWidth;
+    squares.forEach((square) => {
+      square.style.animation =
+        'spaceOfferingEnter 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards, spaceOfferingSquarePulse 3.69s ease-in-out infinite 1.2s';
+    });
+
+    setupSpaceOfferingHoverSync();
+    setTimeout(() => {
+      offeringBoxes.forEach((box) => {
+        box.style.pointerEvents = 'auto';
+      });
+    }, 1200);
+    showMenuController('wcd');
+  }, 3000);
+
+  // Secondary fallback: if still black, force content visibility again.
+  setTimeout(() => {
+    spaceMask.classList.add('active', 'expand');
+    spaceMask.style.opacity = '1';
+    spaceOfferingsContainer.classList.add('show');
+    spaceOfferingsContainer.style.opacity = '1';
+    spaceOfferingsContainer.style.visibility = 'visible';
+    offeringBoxes.forEach((box) => {
+      box.style.pointerEvents = 'auto';
+    });
+  }, 3800);
+}
+
+function hideHome3Menu() {
+  const root = document.getElementById('home3Root');
+  if (root) {
+    root.style.display = 'none';
+  }
+}
+
+function showHome3Menu() {
+  clearHydrantMenuHideTimer();
+  clearHome2MenuHideTimer();
+  hideHome2MenuOverlay();
+  hideHome3Menu();
+  hideContactPage();
+  hideSpaceMask();
+  hideOfferingsBoxes();
+  hideAiConversation();
+  hideFinalScreenUI();
+  hideMenuController();
+  hideLegacyCenterMenus();
+
+  const centerContent = document.querySelector('.center-content');
+  const clickHint = document.getElementById('clickHint');
+  if (centerContent) {
+    centerContent.style.visibility = 'hidden';
+    centerContent.style.opacity = '0';
+    centerContent.style.pointerEvents = 'none';
+  }
+  if (clickHint) {
+    clickHint.style.display = 'none';
+  }
+
+  const foundersPage = document.getElementById('foundersPage');
+  if (foundersPage) {
+    foundersPage.classList.remove('show');
+  }
+
+  document.body.style.overflow = '';
+  document.body.style.background = '#de2d10';
+  document.documentElement.style.background = '#de2d10';
+  const starsContainer = document.getElementById('starsContainer');
+  if (starsContainer) {
+    starsContainer.style.display = 'none';
+  }
+
+  ensureHome3UI();
+  const root = document.getElementById('home3Root');
+  if (root) {
+    root.style.display = 'flex';
+    const icon = root.querySelector('#home3Icon');
+    if (icon) {
+      icon.classList.remove('services-exit');
+    }
   }
 }
 
@@ -1911,9 +2287,9 @@ function collapseHydrantMenuVisuals() {
   const collapseDurationMs = 1000;
   let hasVisibleHydrantMenu = false;
 
-  if (blackSquare) {
-    const squareDisplay = window.getComputedStyle(blackSquare).display;
-    if (squareDisplay !== 'none') hasVisibleHydrantMenu = true;
+  const squareDisplay = blackSquare ? window.getComputedStyle(blackSquare).display : 'none';
+  if (blackSquare && squareDisplay !== 'none') {
+    hasVisibleHydrantMenu = true;
     blackSquare.classList.remove('pulsing', 'hovered');
     const currentSquareTransform = window.getComputedStyle(blackSquare).transform;
     let currentScale = 1;
@@ -1942,9 +2318,9 @@ function collapseHydrantMenuVisuals() {
     }, collapseDurationMs + 30);
   }
 
-  if (hydrantImage) {
-    const hydrantDisplay = window.getComputedStyle(hydrantImage).display;
-    if (hydrantDisplay !== 'none') hasVisibleHydrantMenu = true;
+  const hydrantDisplay = hydrantImage ? window.getComputedStyle(hydrantImage).display : 'none';
+  if (hydrantImage && hydrantDisplay !== 'none') {
+    hasVisibleHydrantMenu = true;
     hydrantImage.classList.remove('pulsing', 'hovered');
     // Keep the hydrant visible while the black square collapses.
     hydrantImage.style.transition = 'none';
@@ -1996,6 +2372,7 @@ function collapseTopLeftMenuControllerVisuals() {
 }
 
 function setupHydrantMenu() {
+  enforceUnifiedMenuOptions();
   const dropdown = document.getElementById('hydrantMenuDropdown');
   if (!dropdown) return;
   
@@ -2062,6 +2439,56 @@ function setupHydrantMenu() {
       hideMenuController();
     });
   }
+}
+
+function enforceUnifiedMenuOptions(contextMode = 'default') {
+  const topLeftByContext = {
+    wcd: [
+      { action: 'home', label: 'Home' },
+      { action: 'founders', label: 'Founders' },
+      { action: 'contact', label: 'Contact' },
+    ],
+    founders: [
+      { action: 'home', label: 'Home' },
+      { action: 'offerings', label: 'Services' },
+      { action: 'contact', label: 'Contact' },
+    ],
+    default: [
+      { action: 'offerings', label: 'Services' },
+      { action: 'founders', label: 'Founders' },
+      { action: 'contact', label: 'Contact' },
+    ],
+  };
+  const topLeftOptions = topLeftByContext[contextMode] || topLeftByContext.default;
+  const hydrantOptions = topLeftByContext.default;
+
+  const ensureButtons = (dropdownEl, itemClass, options) => {
+    if (!dropdownEl) return [];
+    const current = Array.from(dropdownEl.querySelectorAll(`.${itemClass}`));
+    while (current.length < options.length) {
+      const btn = document.createElement('button');
+      btn.className = itemClass;
+      dropdownEl.appendChild(btn);
+      current.push(btn);
+    }
+    while (current.length > options.length) {
+      const extra = current.pop();
+      if (extra) extra.remove();
+    }
+    return current;
+  };
+
+  const applyOptions = (dropdownEl, itemClass, options) => {
+    const buttons = ensureButtons(dropdownEl, itemClass, options);
+    buttons.forEach((btn, idx) => {
+      const option = options[idx];
+      btn.dataset.action = option.action;
+      btn.textContent = option.label;
+    });
+  };
+
+  applyOptions(document.getElementById('menuDropdown'), 'menu-item', topLeftOptions);
+  applyOptions(document.getElementById('hydrantMenuDropdown'), 'hydrant-menu-item', hydrantOptions);
 }
 
 let navigationBubblesSetup = false;
@@ -2177,6 +2604,7 @@ function createMenuStars() {
 }
 
 function showMenuController(contextMode = 'default') {
+  enforceUnifiedMenuOptions(contextMode);
   const menuController = document.getElementById('menuController');
   if (menuController) {
     menuController.classList.remove('open');
@@ -2190,6 +2618,15 @@ function showMenuController(contextMode = 'default') {
       // Create stars when menu is shown
       createMenuStars();
     });
+  }
+}
+
+function restoreDefaultBackdrop() {
+  document.body.style.background = '#000';
+  document.documentElement.style.background = '#000';
+  const starsContainer = document.getElementById('starsContainer');
+  if (starsContainer) {
+    starsContainer.style.display = 'block';
   }
 }
 
@@ -2248,6 +2685,9 @@ function createSpaceMaskStars() {
 }
 
 function showSpaceMask() {
+  restoreDefaultBackdrop();
+  hideHome2MenuOverlay();
+  hideHome3Menu();
   const spaceMask = document.getElementById('spaceMask');
   const spaceOfferingsContainer = document.getElementById('spaceOfferingsContainer');
   if (!spaceMask) return;
@@ -2329,8 +2769,14 @@ function hideSpaceMask() {
 
   // Fully reset mask state so Home returns to normal view.
   spaceMask.className = 'space-mask';
+  spaceMask.style.opacity = '0';
+  spaceMask.style.pointerEvents = 'none';
+  spaceMask.style.transition = '';
   if (spaceOfferingsContainer) {
     spaceOfferingsContainer.classList.remove('show');
+    spaceOfferingsContainer.style.opacity = '';
+    spaceOfferingsContainer.style.visibility = '';
+    spaceOfferingsContainer.style.pointerEvents = '';
   }
   const menuController = document.getElementById('menuController');
   if (menuController) {
@@ -2361,6 +2807,8 @@ function createContactPageStars() {
 }
 
 function showContactPage() {
+  hideHome2MenuOverlay();
+  hideHome3Menu();
   const contactPage = document.getElementById('contactPage');
   const foundersPage = document.getElementById('foundersPage');
   const menuController = document.getElementById('menuController');
@@ -2414,9 +2862,8 @@ function hideContactPage(restoreMenu = false) {
     } else if (contactPageReturnView === 'wcd') {
       showMenuController('wcd');
     } else {
-      // Home fallback: return to centered icon state only.
-      hideMenuController();
-      restoreCenteredHydrantMenuIcon(true);
+      // Home fallback: return to Home page 2 (post-Ask visual without chat UI).
+      showSimpleHomeMenu();
     }
   }
   contactPageReturnMenuContext = null;
@@ -2448,6 +2895,39 @@ function hideAiConversation() {
     chatContainer.style.opacity = '0';
     chatContainer.style.transform = '';
   }
+}
+
+function hideFinalScreenUI() {
+  const finalScreen = document.getElementById('finalScreen');
+  const askAiBtn = document.getElementById('askAiBtn');
+  const navBubbles = document.getElementById('navBubbles');
+  if (finalScreen) {
+    finalScreen.classList.remove('show');
+    finalScreen.style.display = 'none';
+    finalScreen.style.opacity = '';
+    finalScreen.style.transition = '';
+    finalScreen.style.pointerEvents = 'none';
+  }
+  if (askAiBtn) {
+    askAiBtn.style.display = 'none';
+    askAiBtn.style.opacity = '';
+    askAiBtn.style.pointerEvents = 'auto';
+    askAiBtn.style.position = '';
+    askAiBtn.style.top = '';
+    askAiBtn.style.left = '';
+    askAiBtn.style.transform = '';
+    askAiBtn.style.transition = '';
+  }
+  if (navBubbles) {
+    navBubbles.classList.remove('show');
+    navBubbles.style.display = 'none';
+    navBubbles.style.opacity = '0';
+  }
+  if (askMenuAutoOpenTimer) {
+    clearTimeout(askMenuAutoOpenTimer);
+    askMenuAutoOpenTimer = null;
+  }
+  hideHome2MenuOverlay();
 }
 
 function setupContactPage() {
@@ -2508,9 +2988,28 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
   const centerY = Math.round(forceCenter ? (window.innerHeight / 2) : (hydrantMenuAnchor?.y ?? window.innerHeight / 2));
 
   if (centerHydrant) {
-    centerHydrant.style.visibility = 'hidden';
-    centerHydrant.style.opacity = '0';
+    centerHydrant.style.animation = '';
+    centerHydrant.style.transition = '';
+    centerHydrant.style.transform = '';
+    centerHydrant.style.pointerEvents = 'none';
   }
+
+  const centerContent = document.querySelector('.center-content');
+  const redSquare = document.querySelector('.red-square');
+  if (centerContent) {
+    centerContent.style.pointerEvents = 'auto';
+  }
+  if (redSquare) {
+    redSquare.style.pointerEvents = 'auto';
+    redSquare.style.cursor = 'pointer';
+    redSquare.style.animation = '';
+    redSquare.style.transition = '';
+    redSquare.style.transform = '';
+  }
+  if (typeof window.__resetCenterInteraction === 'function') {
+    window.__resetCenterInteraction();
+  }
+  hideFinalScreenUI();
 
   if (blackSquare) {
     blackSquare.classList.remove('hovered');
@@ -2523,6 +3022,18 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
     blackSquare.style.transform = 'translate(-50%, -50%) scale(1)';
     blackSquare.style.opacity = '1';
     blackSquare.style.zIndex = '10001';
+    blackSquare.onmouseenter = () => {
+      clearHydrantMenuHideTimer();
+      showHydrantMenuItems();
+    };
+    blackSquare.onmouseleave = () => {
+      scheduleHydrantMenuHide();
+    };
+    blackSquare.onclick = () => {
+      if (typeof window.__triggerMainReveal === 'function') {
+        window.__triggerMainReveal();
+      }
+    };
   }
 
   if (backgroundStars) {
@@ -2541,7 +3052,27 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
     hydrantImage.style.transform = 'translate(-50%, -50%) scale(1)';
     hydrantImage.style.opacity = '1';
     hydrantImage.style.zIndex = '10003';
-    hydrantImage.style.pointerEvents = 'none';
+    hydrantImage.style.pointerEvents = 'auto';
+    hydrantImage.onmouseenter = () => {
+      clearHydrantMenuHideTimer();
+      showHydrantMenuItems();
+    };
+    hydrantImage.onmouseleave = () => {
+      scheduleHydrantMenuHide();
+    };
+    hydrantImage.onclick = () => {
+      if (typeof window.__triggerMainReveal === 'function') {
+        window.__triggerMainReveal();
+      }
+    };
+    if (centerHydrant) {
+      // Avoid double hydrant render when menu hydrant is active.
+      centerHydrant.style.visibility = 'hidden';
+      centerHydrant.style.opacity = '0';
+    }
+  } else if (centerHydrant) {
+    centerHydrant.style.visibility = 'visible';
+    centerHydrant.style.opacity = '1';
   }
 
   if (dropdown) {
@@ -2555,6 +3086,111 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
   }
 
   createHydrantHoverZone(centerX, centerY);
+}
+
+function showSimpleHomeMenu() {
+  clearHydrantMenuHideTimer();
+  clearHome2MenuHideTimer();
+  hideHome2MenuOverlay();
+  hideContactPage();
+  hideSpaceMask();
+  hideOfferingsBoxes();
+  hideAiConversation();
+  hideFinalScreenUI();
+  hideMenuController();
+  document.body.style.overflow = '';
+
+  const foundersPage = document.getElementById('foundersPage');
+  if (foundersPage) {
+    foundersPage.classList.remove('show');
+  }
+
+  // Home page 2 visual: full red background.
+  document.body.style.background = '#de2d10';
+  document.documentElement.style.background = '#de2d10';
+  const starsContainer = document.getElementById('starsContainer');
+  if (starsContainer) {
+    starsContainer.style.display = 'none';
+  }
+
+  const hasCenterMenu =
+    !!document.getElementById('hydrantBackgroundSquare') &&
+    !!document.getElementById('hydrantMenuImage');
+
+  if (hasCenterMenu) {
+    restoreCenteredHydrantMenuIcon(true);
+  } else {
+    showHydrantMenu();
+  }
+
+  // Keep icon square black with stars inside.
+  const blackSquare = document.getElementById('hydrantBackgroundSquare');
+  const backgroundStars = document.getElementById('hydrantBackgroundStars');
+  const hydrantImage = document.getElementById('hydrantMenuImage');
+  if (blackSquare) {
+    blackSquare.style.background = '#000';
+    blackSquare.style.borderColor = '#de2d10';
+    blackSquare.classList.remove('hovered');
+    blackSquare.classList.add('pulsing');
+  }
+  if (hydrantImage) {
+    hydrantImage.classList.remove('hovered');
+    hydrantImage.classList.add('pulsing');
+  }
+  if (backgroundStars) {
+    backgroundStars.style.display = 'block';
+    backgroundStars.style.transition = 'none';
+    backgroundStars.style.transform = 'scale(1)';
+  }
+
+  // Keep legacy dropdown disabled for Home page 2; use top overlay menu.
+  enforceUnifiedMenuOptions('default');
+  setupHydrantMenu();
+  const dropdown = document.getElementById('hydrantMenuDropdown');
+  if (dropdown) {
+    dropdown.classList.remove('show');
+    dropdown.style.display = 'none';
+    dropdown.style.pointerEvents = 'none';
+  }
+
+  const iconRectSource = hydrantImage || blackSquare;
+  if (iconRectSource) {
+    const rect = iconRectSource.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    createHydrantHoverZone(centerX, centerY);
+    const hoverZone = document.getElementById('hydrantHoverZone');
+    const keepMenuVisible = () => {
+      clearHome2MenuHideTimer();
+      showHome2MenuOverlay(iconRectSource);
+    };
+    if (blackSquare) {
+      blackSquare.onmouseenter = keepMenuVisible;
+      blackSquare.onmouseleave = keepMenuVisible;
+    }
+    if (hydrantImage) {
+      hydrantImage.onmouseenter = keepMenuVisible;
+      hydrantImage.onmouseleave = keepMenuVisible;
+    }
+    if (hoverZone) {
+      hoverZone.onmouseenter = keepMenuVisible;
+      hoverZone.onmouseleave = keepMenuVisible;
+    }
+    // Keep Home 2 menu buttons always visible next to the icon.
+    keepMenuVisible();
+  }
+  setupHome2MenuOverlay();
+
+  const centerContent = document.querySelector('.center-content');
+  const clickHint = document.getElementById('clickHint');
+  if (centerContent) {
+    centerContent.style.visibility = 'hidden';
+    centerContent.style.opacity = '0';
+    centerContent.style.pointerEvents = 'none';
+  }
+  if (clickHint) {
+    clickHint.style.display = 'none';
+  }
 }
 
 function setupSpaceOfferingHoverSync() {
@@ -2594,6 +3230,55 @@ function setupSpaceOfferingHoverSync() {
       title.style.animationPlayState = 'running';
     });
   });
+}
+
+function setupHome2MenuOverlay() {
+  const menu = document.getElementById('home2MenuOverlay');
+  if (!menu) return;
+  const items = menu.querySelectorAll('.home2-menu-item');
+  items.forEach((item) => {
+    const newItem = item.cloneNode(true);
+    item.parentNode.replaceChild(newItem, item);
+  });
+
+  const wiredItems = menu.querySelectorAll('.home2-menu-item');
+  wiredItems.forEach((item) => {
+    item.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      clearHome2MenuHideTimer();
+      hideHome2MenuOverlay();
+      const action = item.dataset.action;
+      const foundersPage = document.getElementById('foundersPage');
+      switch (action) {
+        case 'offerings':
+          hideContactPage();
+          showSpaceMask();
+          break;
+        case 'founders':
+          if (foundersPage) {
+            hideContactPage();
+            hideSpaceMask();
+            hideOfferingsBoxes();
+            foundersPage.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => showMenuController('founders'), 100);
+          }
+          break;
+        case 'contact':
+          showContactPage();
+          break;
+      }
+    };
+  });
+
+  menu.onmouseenter = () => {
+    clearHome2MenuHideTimer();
+  };
+  menu.onmouseleave = () => {
+    // Keep visible on Home 2; hide only when navigating away.
+    clearHome2MenuHideTimer();
+  };
 }
 
 function showOfferingsBoxes() {
@@ -2712,6 +3397,7 @@ function setupOfferingCards() {
 
 // Set up menu controller navigation
 function setupMenuController() {
+  enforceUnifiedMenuOptions();
   const menuController = document.getElementById('menuController');
   const menuSquareWrapper = menuController ? menuController.querySelector('.menu-square-wrapper') : null;
   const menuItems = document.querySelectorAll('.menu-item');
@@ -2771,21 +3457,9 @@ function setupMenuController() {
       
       switch(action) {
         case 'home':
-          // Scroll to top / reset to home state
+          // Return to fresh Home page 3 state.
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          hideContactPage();
-          hideAiConversation();
-          // Hide founders page if open
-          const wasFoundersOpen = !!(foundersPage && foundersPage.classList.contains('show'));
-          if (foundersPage && foundersPage.classList.contains('show')) {
-            foundersPage.classList.remove('show');
-            document.body.style.overflow = '';
-          }
-          // Hide offerings boxes and show chat
-          hideSpaceMask();
-          hideOfferingsBoxes();
-          hideMenuController();
-          restoreCenteredHydrantMenuIcon(wasFoundersOpen);
+          showHome3Menu();
           break;
         case 'who-are-we':
           // Route cleanly back to the core chat context.

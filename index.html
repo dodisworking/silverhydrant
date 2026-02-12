@@ -20,6 +20,8 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="hydrant.png" />
+    <link rel="preload" as="image" href="a.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="hydrant.png" fetchpriority="high" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,7 +45,7 @@
             <h2 class="space-offering-title">Consulting</h2>
           </div>
           <div class="space-offering-memo">
-            <p>Strategic AI consulting to help you identify opportunities, navigate challenges, and build AI capabilities that drive real business value.</p>
+            <p>Strategic AI consulting to spot the highest-value opportunities, manage risk, and build real capability.</p>
           </div>
         </div>
         
@@ -53,7 +55,7 @@
             <h2 class="space-offering-title">Influencer Marketing</h2>
           </div>
           <div class="space-offering-memo">
-            <p>AI-powered influencer marketing that finds the right creators, optimizes campaigns, and drives measurable brand growth.</p>
+            <p>AI-powered creator strategy and execution to find the right partners, optimize performance, and drive measurable growth.</p>
           </div>
         </div>
         
@@ -63,7 +65,7 @@
             <h2 class="space-offering-title">Product Management</h2>
           </div>
           <div class="space-offering-memo">
-            <p>End-to-end AI product development from concept to launch, ensuring your products leverage AI to solve real user problems.</p>
+            <p>End-to-end AI product development from concept to launch, focused on real user problems and adoption.</p>
           </div>
         </div>
         
@@ -73,7 +75,7 @@
             <h2 class="space-offering-title">Purpose Ideation</h2>
           </div>
           <div class="space-offering-memo">
-            <p>Purpose brand ideation to uncover the brand purpose that drives business strategy and long-term growth, inspired by approaches like BrightHouse and BCG.</p>
+            <p>Purpose-led brand strategy that clarifies what you stand for and turns it into direction, messaging, and momentum.</p>
           </div>
         </div>
         
@@ -83,7 +85,7 @@
             <h2 class="space-offering-title">Off-Menu</h2>
           </div>
           <div class="space-offering-memo">
-            <p>Custom AI solutions tailored to your unique needs. If it's not on the menu, we'll create it for you.</p>
+            <p>Custom builds for your specific challenge. If it's not listed, we'll design it.</p>
           </div>
         </div>
       </div>
@@ -98,10 +100,8 @@
         <img class="menu-hydrant" src="a.png" alt="Silver fire hydrant" />
       </div>
       <div class="menu-dropdown" id="menuDropdown">
-        <button class="menu-item" data-action="home">Home</button>
-        <button class="menu-item" data-action="who-are-we">What are we</button>
-        <button class="menu-item" data-action="founders">Who are the founders</button>
-        <button class="menu-item" data-action="offerings">What we can do</button>
+        <button class="menu-item" data-action="offerings">Services</button>
+        <button class="menu-item" data-action="founders">Founders</button>
         <button class="menu-item" data-action="contact">Contact</button>
       </div>
     </div>
@@ -109,7 +109,7 @@
     <div class="center-content">
       <div class="red-square-wrapper">
         <div class="red-square"></div>
-        <img class="center-hydrant" src="a.png" alt="Silver fire hydrant" />
+        <img class="center-hydrant" src="a.png" alt="Silver fire hydrant" decoding="sync" fetchpriority="high" />
       </div>
       <div class="click-hint" id="clickHint">click the box</div>
     </div>
@@ -117,11 +117,11 @@
     <!-- Final Screen Content -->
     <div class="final-screen" id="finalScreen">
       <h1 class="brand-title" id="brandTitle">Silver Hydrant</h1>
-      <button class="ask-ai-btn" id="askAiBtn">Ask AI who we are</button>
+      <button class="ask-ai-btn" id="askAiBtn">Ask Hydrant Ai who we are</button>
       
       <div class="chat-container" id="chatContainer">
         <div class="chat-message chat-user">
-          <div class="chat-bubble">hello, who are Silver hydrant?</div>
+          <div class="chat-bubble">hello, what is Silver Hydrant?</div>
         </div>
         <div class="chat-message chat-ai">
           <div class="chat-bubble" id="aiResponse"></div>
@@ -138,7 +138,7 @@
               <h2 class="offering-box-title offering-title-inside">Consulting</h2>
             </div>
             <div class="offering-box-memo">
-              <p>Strategic AI consulting to help you identify opportunities, navigate challenges, and build AI capabilities that drive real business value.</p>
+              <p>Strategic AI consulting to spot the highest-value opportunities, manage risk, and build real capability.</p>
             </div>
           </div>
           
@@ -149,7 +149,7 @@
               <h2 class="offering-box-title offering-title-inside">Influencer Marketing</h2>
             </div>
             <div class="offering-box-memo">
-              <p>AI-powered influencer marketing that finds the right creators, optimizes campaigns, and drives measurable brand growth.</p>
+              <p>AI-powered creator strategy and execution to find the right partners, optimize performance, and drive measurable growth.</p>
             </div>
           </div>
           
@@ -160,7 +160,7 @@
               <h2 class="offering-box-title offering-title-inside">Product Management</h2>
             </div>
             <div class="offering-box-memo">
-              <p>End-to-end AI product development from concept to launch, ensuring your products leverage AI to solve real user problems.</p>
+              <p>End-to-end AI product development from concept to launch, focused on real user problems and adoption.</p>
             </div>
           </div>
           
@@ -171,7 +171,7 @@
               <h2 class="offering-box-title offering-title-inside">Purpose Ideation</h2>
             </div>
             <div class="offering-box-memo">
-              <p>Purpose brand ideation to uncover the brand purpose that drives business strategy and long-term growth, inspired by approaches like BrightHouse and BCG.</p>
+              <p>Purpose-led brand strategy that clarifies what you stand for and turns it into direction, messaging, and momentum.</p>
             </div>
           </div>
           
@@ -182,7 +182,7 @@
               <h2 class="offering-box-title offering-title-inside">Off-Menu</h2>
             </div>
             <div class="offering-box-memo">
-              <p>Custom AI solutions tailored to your unique needs. If it's not on the menu, we'll create it for you.</p>
+              <p>Custom builds for your specific challenge. If it's not listed, we'll design it.</p>
             </div>
           </div>
         </div>
@@ -190,9 +190,15 @@
       
       <!-- Hydrant Menu Dropdown (positioned dynamically via JS) -->
       <div class="hydrant-menu-dropdown" id="hydrantMenuDropdown">
-        <button class="hydrant-menu-item" data-action="offerings">What we can do</button>
-        <button class="hydrant-menu-item" data-action="founders">Who are the founders</button>
-        <button class="hydrant-menu-item" data-action="contact">Contact us</button>
+        <button class="hydrant-menu-item" data-action="offerings">Services</button>
+        <button class="hydrant-menu-item" data-action="founders">Founders</button>
+        <button class="hydrant-menu-item" data-action="contact">Contact</button>
+      </div>
+
+      <div class="home2-menu-overlay" id="home2MenuOverlay">
+        <button class="home2-menu-item" data-action="offerings">Services</button>
+        <button class="home2-menu-item" data-action="founders">Founders</button>
+        <button class="home2-menu-item" data-action="contact">Contact</button>
       </div>
     </div>
 
@@ -205,9 +211,9 @@
         </div>
         <div class="founders-text">
           <h2>About the Founders</h2>
-          <p>Silver Hydrant was founded by a team of visionaries who believe in painting what matters most. Drawing inspiration from the story of Beverly Hills painting their fire hydrants silver, our founders recognized the power of highlighting what truly matters in a world full of noise.</p>
-          <p>With backgrounds spanning AI, advertising, marketing, production, web development, software development, and data research, our founders bring together decades of combined experience to help brands find clarity, focus, and purpose.</p>
-          <p>We believe that by identifying and highlighting the critical moments, systems, and decisions that create real impact, we can help companies move faster, communicate smarter, and drive meaningful, positive change in the world.</p>
+          <p>Silver Hydrant was founded to help brands focus on what matters most.</p>
+          <p>Our name comes from Beverly Hills painting fire hydrants silver so they'd stand out in an emergency. We use the same principle in business: cut through the noise, find the signal, and act on it.</p>
+          <p>Between us, we've spent the last decade building across advertising, marketing, production, AI, product, web, software, and research. We spotlight the moments and decisions that move people and performance, so teams move faster, communicate with clarity, and create real, positive impact.</p>
           <div class="brand-experience">
             <h3>Brand Experience</h3>
             <p>Our experience includes these and many more brands. We think we are ready for yours.</p>
