@@ -2975,17 +2975,17 @@ main section {
 
 @keyframes home3SquarePulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(0.92); }
+  50% { transform: scale(1.08); }
 }
 
 @keyframes home3HydrantPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.13); }
+  50% { transform: scale(0.93); }
 }
 
 @keyframes home3StarsCounterPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.087); }
+  50% { transform: scale(0.9259); }
 }
 
 @keyframes home3SquareShrinkForServices {

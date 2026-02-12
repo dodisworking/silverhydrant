@@ -1267,6 +1267,28 @@ Silver Hydrant helps brands apply AI with <strong>precision and purpose</strong>
 
 let askAiButtonYOffset = -43;
 let askMenuAutoOpenTimer = null;
+let finalScreenScrollSyncAttached = false;
+
+function setOverlayBaseTop(el, topPx) {
+  if (!el) return;
+  el.dataset.baseTop = String(topPx);
+  el.style.top = `${topPx}px`;
+}
+
+function updateFinalScreenOverlayScroll() {
+  const finalScreen = document.getElementById('finalScreen');
+  if (!finalScreen) return;
+  const isMobileLike = window.innerWidth <= 900;
+  const scrollTop = finalScreen.scrollTop || 0;
+  const ids = ['hydrantBackgroundSquare', 'hydrantMenuImage', 'hydrantMenuDropdown', 'hydrantHoverZone'];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el || !el.dataset.baseTop) return;
+    const base = parseFloat(el.dataset.baseTop);
+    if (Number.isNaN(base)) return;
+    el.style.top = `${isMobileLike ? (base - scrollTop) : base}px`;
+  });
+}
 
 function updateAskAiButtonPosition() {
   const askAiBtn = document.getElementById('askAiBtn');
@@ -1313,6 +1335,11 @@ function showFinalScreen() {
   
   if (!finalScreen || !askAiBtn || !hydrant) {
     return;
+  }
+  if (!finalScreenScrollSyncAttached) {
+    finalScreen.addEventListener('scroll', updateFinalScreenOverlayScroll, { passive: true });
+    window.addEventListener('resize', updateFinalScreenOverlayScroll);
+    finalScreenScrollSyncAttached = true;
   }
   applyCenterHydrantHdMode(hydrant);
   
@@ -1373,6 +1400,7 @@ function showFinalScreen() {
   
   requestAnimationFrame(() => {
     finalScreen.style.opacity = '1';
+    updateFinalScreenOverlayScroll();
     
     // Title is hidden - skip title animation
     
@@ -1730,7 +1758,7 @@ function showHydrantMenu() {
   blackSquare.classList.remove('pulsing', 'hovered');
   blackSquare.style.position = 'fixed';
   blackSquare.style.left = `${hydrantCenterX}px`;
-  blackSquare.style.top = `${hydrantCenterY}px`;
+  setOverlayBaseTop(blackSquare, hydrantCenterY);
   blackSquare.style.transform = `translate(-50%, -50%) scale(${startSquareScale})`;
   blackSquare.style.transition = 'none';
   blackSquare.style.opacity = '1';
@@ -1773,7 +1801,7 @@ function showHydrantMenu() {
   newHydrant.src = 'a.png';
   newHydrant.style.position = 'fixed';
   newHydrant.style.left = `${hydrantCenterX}px`;
-  newHydrant.style.top = `${hydrantCenterY}px`;
+  setOverlayBaseTop(newHydrant, hydrantCenterY);
   newHydrant.style.transform = 'translate(-50%, -50%) scale(1)';
   newHydrant.style.transition = 'none';
   newHydrant.style.width = `${hydrantRect.width}px`;
@@ -1824,7 +1852,7 @@ function showHydrantMenu() {
   if (hydrantMenuDropdown) {
     hydrantMenuDropdown.style.position = 'fixed';
     hydrantMenuDropdown.style.left = `${hydrantCenterX + 110}px`; // To the right of the square
-    hydrantMenuDropdown.style.top = `${hydrantCenterY}px`;
+    setOverlayBaseTop(hydrantMenuDropdown, hydrantCenterY);
     hydrantMenuDropdown.style.transform = 'translateY(-50%)';
     hydrantMenuDropdown.style.zIndex = '10004';
     hydrantMenuDropdown.style.display = 'flex';
@@ -1889,7 +1917,7 @@ function createHydrantHoverZone(centerX, centerY) {
   // Position the hover zone to cover the hydrant + square area (185px square)
   hoverZone.style.position = 'fixed';
   hoverZone.style.left = `${centerX - 100}px`;
-  hoverZone.style.top = `${centerY - 100}px`;
+  setOverlayBaseTop(hoverZone, centerY - 100);
   hoverZone.style.width = '200px';
   hoverZone.style.height = '200px';
   hoverZone.style.zIndex = '10005';
@@ -1931,7 +1959,7 @@ function showHydrantMenuItems() {
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       dropdown.style.left = `${centerX + 110}px`;
-      dropdown.style.top = `${centerY}px`;
+      setOverlayBaseTop(dropdown, centerY);
       dropdown.style.transform = 'translateY(-50%)';
     }
     dropdown.style.display = 'flex';
@@ -2907,6 +2935,12 @@ function hideFinalScreenUI() {
     finalScreen.style.opacity = '';
     finalScreen.style.transition = '';
     finalScreen.style.pointerEvents = 'none';
+    finalScreen.scrollTop = 0;
+    if (finalScreenScrollSyncAttached) {
+      finalScreen.removeEventListener('scroll', updateFinalScreenOverlayScroll);
+      window.removeEventListener('resize', updateFinalScreenOverlayScroll);
+      finalScreenScrollSyncAttached = false;
+    }
   }
   if (askAiBtn) {
     askAiBtn.style.display = 'none';
@@ -3017,7 +3051,7 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
     blackSquare.style.display = 'block';
     blackSquare.style.position = 'fixed';
     blackSquare.style.left = `${centerX}px`;
-    blackSquare.style.top = `${centerY}px`;
+    setOverlayBaseTop(blackSquare, centerY);
     blackSquare.style.transition = 'none';
     blackSquare.style.transform = 'translate(-50%, -50%) scale(1)';
     blackSquare.style.opacity = '1';
@@ -3047,7 +3081,7 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
     hydrantImage.style.display = 'block';
     hydrantImage.style.position = 'fixed';
     hydrantImage.style.left = `${centerX}px`;
-    hydrantImage.style.top = `${centerY}px`;
+    setOverlayBaseTop(hydrantImage, centerY);
     hydrantImage.style.transition = 'none';
     hydrantImage.style.transform = 'translate(-50%, -50%) scale(1)';
     hydrantImage.style.opacity = '1';
@@ -3080,7 +3114,7 @@ function restoreCenteredHydrantMenuIcon(forceCenter = false) {
     dropdown.style.display = 'flex';
     dropdown.style.position = 'fixed';
     dropdown.style.left = `${centerX + 110}px`;
-    dropdown.style.top = `${centerY}px`;
+    setOverlayBaseTop(dropdown, centerY);
     dropdown.style.transform = 'translateY(-50%)';
     dropdown.style.zIndex = '10004';
   }
