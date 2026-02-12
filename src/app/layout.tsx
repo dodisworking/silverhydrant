@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description:
       "A purpose-driven, human-centered AI consulting firm guiding companies to confidently evolve and lead in the AI future.",
   },
-  icons: { icon: "/hydrant.png" },
+  icons: { icon: "/a.png" },
 };
 
 export default function RootLayout({
