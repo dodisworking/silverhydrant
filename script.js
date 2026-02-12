@@ -1242,20 +1242,29 @@ if (document.readyState === "loading") {
     createStars();
     init();
     preloadHeroAssets().finally(() => {
-      document.documentElement.classList.remove('hero-assets-pending');
-      document.documentElement.classList.add('hero-assets-loaded');
-      document.documentElement.classList.add('hero-ready');
-      setupHoverEffect();
+      // Give browser two paint frames after decode so the hydrant renders crisp before intro starts.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove('hero-assets-pending');
+          document.documentElement.classList.add('hero-assets-loaded');
+          document.documentElement.classList.add('hero-ready');
+          setupHoverEffect();
+        });
+      });
     });
   });
 } else {
   createStars();
   init();
   preloadHeroAssets().finally(() => {
-    document.documentElement.classList.remove('hero-assets-pending');
-    document.documentElement.classList.add('hero-assets-loaded');
-    document.documentElement.classList.add('hero-ready');
-    setupHoverEffect();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.classList.remove('hero-assets-pending');
+        document.documentElement.classList.add('hero-assets-loaded');
+        document.documentElement.classList.add('hero-ready');
+        setupHoverEffect();
+      });
+    });
   });
 }
 
