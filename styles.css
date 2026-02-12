@@ -667,7 +667,10 @@ html.hero-ready .red-square {
 }
 
 .center-hydrant {
-  width: 130px;
+  --hydrant-size-min: 130px;
+  --hydrant-size-enter: 150px;
+  --hydrant-size-max: 208px;
+  width: var(--hydrant-size-min);
   height: auto;
   display: block;
   -webkit-user-drag: none;
@@ -681,10 +684,10 @@ html.hero-ready .red-square {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0);
+  transform: translate(-50%, -50%);
   z-index: 3;
   visibility: visible;
-  transition: top 2s cubic-bezier(0.4, 0, 0.2, 1), transform 2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: top 2s cubic-bezier(0.4, 0, 0.2, 1), width 2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html.hero-ready .center-hydrant {
@@ -727,33 +730,40 @@ html.hero-ready .center-hydrant {
 
 @keyframes hydrantEnter {
   0% {
-    transform: translate(-50%, -50%) scale(0);
+    transform: translate(-50%, -50%);
+    width: 0px;
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.15);
+    transform: translate(-50%, -50%);
+    width: var(--hydrant-size-enter);
     opacity: 1;
   }
 }
 
 @keyframes hydrantPosition {
   0% {
-    transform: translate(-50%, -50%) scale(1.15);
+    transform: translate(-50%, -50%);
+    width: var(--hydrant-size-enter);
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.6); /* Match pulse animation start */
+    transform: translate(-50%, -50%);
+    width: var(--hydrant-size-max); /* Match pulse animation start */
   }
 }
 
 @keyframes hydrantPulse {
   0% {
-    transform: translate(-50%, -50%) scale(1.6); /* Larger when box is at scale(1) */
+    transform: translate(-50%, -50%);
+    width: var(--hydrant-size-max); /* Larger when box is at scale(1) */
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.0); /* Smaller when box grows to scale(1.15) */
+    transform: translate(-50%, -50%);
+    width: var(--hydrant-size-min); /* Smaller when box grows to scale(1.15) */
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.6); /* Larger when box shrinks back to scale(1) */
+    transform: translate(-50%, -50%);
+    width: var(--hydrant-size-max); /* Larger when box shrinks back to scale(1) */
   }
 }
 
@@ -765,7 +775,10 @@ html.hero-ready .center-hydrant {
   }
   
   .center-hydrant {
-    width: 110px;
+    --hydrant-size-min: 110px;
+    --hydrant-size-enter: 126px;
+    --hydrant-size-max: 176px;
+    width: var(--hydrant-size-min);
   }
 }
 
@@ -776,7 +789,10 @@ html.hero-ready .center-hydrant {
   }
   
   .center-hydrant {
-    width: 90px;
+    --hydrant-size-min: 90px;
+    --hydrant-size-enter: 104px;
+    --hydrant-size-max: 144px;
+    width: var(--hydrant-size-min);
   }
 }
 
