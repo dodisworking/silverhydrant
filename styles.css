@@ -1,7 +1,6 @@
 :root {
   --bg: #de2d10;
   --cursor: auto !important;
-  --offeringIconScale: 10.1;
 
   /* Intro timings */
   --fade: 1.2s;
@@ -1708,10 +1707,11 @@ html.hero-ready .center-hydrant {
 /* Keep custom offering icons small like the original icon style. */
 .offering-icon-image {
   position: absolute;
-  top: 50%;
+  top: 20%;
   left: 50%;
-  width: calc(20px * var(--offeringIconScale));
-  height: calc(20px * var(--offeringIconScale));
+  width: 42%;
+  max-width: 74px;
+  height: auto;
   transform: translate(-50%, -50%);
   transform-origin: center center;
   object-fit: contain;
@@ -2009,8 +2009,9 @@ html.hero-ready .center-hydrant {
 
 @media (max-width: 768px) {
   .offering-icon-image {
-    width: 18px;
-    height: 18px;
+    width: 40%;
+    max-width: 52px;
+    top: 22%;
   }
 }
 
@@ -2141,6 +2142,16 @@ html.hero-ready .center-hydrant {
   
   .offering-box-title {
     font-size: clamp(9px, 1.2vw, 12px);
+  }
+
+  .menu-dropdown {
+    top: 64px;
+    gap: 6px;
+  }
+
+  .menu-item {
+    font-size: 11px;
+    padding: 6px 10px;
   }
 }
 
@@ -2543,8 +2554,15 @@ html.hero-ready .center-hydrant {
   }
   
   .menu-item {
-    font-size: 13px;
-    padding: 8px 16px;
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 10px;
+  }
+
+  .menu-dropdown {
+    top: 72px;
+    gap: 8px;
+    padding-top: 0;
   }
 }
 
