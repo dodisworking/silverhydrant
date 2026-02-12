@@ -2568,12 +2568,28 @@ html.hero-ready .center-hydrant {
     font-size: 12px;
     padding: 7px 12px;
     border-radius: 10px;
+    max-width: calc(100vw - 40px);
   }
 
   .menu-dropdown {
     top: 72px;
     gap: 8px;
     padding-top: 0;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-dropdown {
+    top: 62px;
+    gap: 6px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .menu-item {
+    font-size: 11px;
+    padding: 6px 10px;
+    max-width: calc(100vw - 32px);
   }
 }
 
@@ -2799,10 +2815,12 @@ html.hero-ready .center-hydrant {
   
   .hydrant-menu-dropdown {
     align-items: center;
+    max-width: calc(100vw - 24px);
   }
   
   .hydrant-menu-item {
     font-size: 13px;
     padding: 8px 16px;
+    max-width: calc(100vw - 32px);
   }
 }
