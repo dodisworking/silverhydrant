@@ -1117,7 +1117,7 @@ function setupHoverEffect() {
     
     // Enable hardware acceleration for smooth performance
     redSquare.style.willChange = 'transform';
-    hydrant.style.willChange = 'transform';
+    hydrant.style.willChange = 'auto';
     
     // Apply smooth accelerated growth transitions
     // Using a perfectly smooth ease-in curve for continuous acceleration without halting
@@ -1339,7 +1339,7 @@ function showFinalScreen() {
   // Don't change top/left position, just increase scale
   const newScale = currentScale * 1.2; // Grow by 20% more
   hydrant.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-  hydrant.style.willChange = 'transform';
+  hydrant.style.willChange = 'auto';
   
   requestAnimationFrame(() => {
     // Keep current position, just increase scale
