@@ -1191,17 +1191,68 @@ function setupHoverEffect() {
   });
 }
 
+function preloadHeroAssets() {
+  const preloadSrc = (src) => new Promise((resolve) => {
+    const img = new Image();
+    const finish = () => resolve();
+    img.onload = () => {
+      if (img.decode) {
+        img.decode().then(finish).catch(finish);
+      } else {
+        finish();
+      }
+    };
+    img.onerror = finish;
+    img.src = src;
+  });
+
+  const waitForElementDecode = (selector) => new Promise((resolve) => {
+    const el = document.querySelector(selector);
+    if (!el) return resolve();
+    const done = () => resolve();
+    if (el.complete && el.naturalWidth > 0) {
+      if (el.decode) {
+        el.decode().then(done).catch(done);
+      } else {
+        done();
+      }
+      return;
+    }
+    el.addEventListener('load', () => {
+      if (el.decode) {
+        el.decode().then(done).catch(done);
+      } else {
+        done();
+      }
+    }, { once: true });
+    el.addEventListener('error', done, { once: true });
+  });
+
+  // Gate hero start on the actual hero hydrant image decode.
+  return Promise.all([
+    preloadSrc('hydrant.png'),
+    preloadSrc('a.png'),
+    waitForElementDecode('.center-hydrant'),
+  ]);
+}
+
 // Start the app when DOM is ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     createStars();
-    setupHoverEffect();
     init();
+    preloadHeroAssets().finally(() => {
+      document.documentElement.classList.add('hero-ready');
+      setupHoverEffect();
+    });
   });
 } else {
   createStars();
-  setupHoverEffect();
   init();
+  preloadHeroAssets().finally(() => {
+    document.documentElement.classList.add('hero-ready');
+    setupHoverEffect();
+  });
 }
 
 /* ============================================================================
