@@ -1,0 +1,107 @@
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.iconBox {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  background: #0a0a0a;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+.starsLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.miniStar {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: twinkle 2s ease-in-out infinite alternate;
+}
+
+.hydrant {
+  width: 90px !important;
+  height: 90px !important;
+  object-fit: contain;
+  pointer-events: none;
+  animation: breatheInverse 3.2s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
+}
+
+.sideMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menuBtn {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.menuBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.04) translateX(2px);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.menuBtn:active {
+  transform: scale(0.97);
+}
+
+/* Breathing: box grows while hydrant shrinks (inverse) */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.06); }
+}
+
+@keyframes breatheInverse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(0.93); }
+}
+
+@keyframes twinkle {
+  0%   { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .iconBox {
+    width: 130px;
+    height: 130px;
+  }
+  .hydrant {
+    width: 70px !important;
+    height: 70px !important;
+  }
+  .menuBtn {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+}

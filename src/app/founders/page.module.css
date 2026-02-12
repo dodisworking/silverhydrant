@@ -1,0 +1,162 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg-black);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* IE / Edge */
+}
+
+.page::-webkit-scrollbar {
+  display: none;                    /* Chrome / Safari */
+}
+
+.stars {
+  z-index: var(--z-stars);
+}
+
+.content {
+  position: relative;
+  z-index: var(--z-page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 80px 24px 60px;
+  gap: 32px;
+}
+
+.logo {
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.imageWrap {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.photo {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.heading {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.paragraph {
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* ---- Brands ---- */
+.brands {
+  width: 100%;
+  text-align: center;
+}
+
+.brandsHeading {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.brandsIntro {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 16px;
+}
+
+/* Carousel wrapper — masks the overflow and lets the track slide */
+.carouselWrap {
+  width: 100%;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  padding: 12px 0;
+}
+
+/* The actual sliding track — doubled content so it loops seamlessly */
+.carousel {
+  display: flex;
+  gap: 28px;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+}
+
+.carousel:hover {
+  animation-play-state: paused;
+}
+
+.brandChip {
+  flex: 0 0 auto;
+  width: 100px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  padding: 10px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.brandChip:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.08);
+}
+
+.brandLogo {
+  max-width: 72px;
+  max-height: 40px;
+  /* No filter — show original brand colors */
+  opacity: 0.9;
+}
+
+/* ---- CTA ---- */
+.contactBtn {
+  background: var(--bg-red);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 36px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.contactBtn:hover {
+  background: #c0250e;
+  transform: scale(1.04);
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (max-width: 600px) {
+  .content {
+    padding: 60px 16px 40px;
+    gap: 24px;
+  }
+  .paragraph {
+    font-size: 15px;
+  }
+}

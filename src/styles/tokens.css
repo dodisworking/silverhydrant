@@ -1,0 +1,24 @@
+/* ------------------------------------------------------------------ */
+/*  Design tokens                                                     */
+/* ------------------------------------------------------------------ */
+
+:root {
+  /* Colours */
+  --bg-red: #de2d10;
+  --bg-black: #000;
+  --white: #fff;
+
+  /* Timing */
+  --fade: 0.4s;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index layers (strict policy) */
+  --z-stars: 0;
+  --z-page: 1;
+  --z-overlay: 100;
+  --z-menu: 900;
+  --z-modal: 1000;
+
+  /* Typography */
+  --font-body: "Inter", "Space Grotesk", system-ui, Arial, sans-serif;
+}

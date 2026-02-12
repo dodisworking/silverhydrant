@@ -1,18 +1,25 @@
 {
-  "name": "html-css",
-  "version": "1.0.0",
-  "description": "A template for HTML and CSS",
-  "main": "index.html",
+  "name": "silver-hydrant-web",
+  "version": "2.0.0",
+  "private": true,
   "scripts": {
-    "start": "serve"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "keywords": [
-    "html",
-    "css"
-  ],
-  "author": "Ives van Hoorne",
-  "license": "MIT",
+  "dependencies": {
+    "framer-motion": "^12.23.24",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
   "devDependencies": {
-    "serve": "11.2.0"
+    "@types/node": "^24.6.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "eslint": "^9.37.0",
+    "eslint-config-next": "^16.0.0",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,0 +1,281 @@
+/* Everything lives inside a single fixed viewport */
+.page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.stars {
+  z-index: 0;
+}
+
+/* Scene wrapper — shifts everything up as chat content grows */
+.scene {
+  position: absolute;
+  inset: 0;
+  transform: translateY(0);
+  transition: transform 0.3s ease-out;
+}
+
+/* ================================================================
+   RED SQUARE — centered with position fixed
+   ================================================================ */
+.redSquare {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  background: #de2d10;
+  border-radius: 4px;
+  transform: translate(-50%, -50%) scale(0);
+  transform-origin: center center;
+  will-change: transform;
+  z-index: 2;
+}
+
+.squareEnter {
+  animation:
+    sqEnter 3.28s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    sqSettle 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 3.28s forwards;
+}
+
+.squarePulse {
+  transform: translate(-50%, -50%) scale(1);
+  animation: sqPulse 3.69s ease-in-out infinite;
+}
+
+/* ================================================================
+   HYDRANT — centered on top of the square
+   ================================================================ */
+.hydrant {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  height: auto;
+  transform: translate(-50%, -50%) scale(0);
+  transform-origin: center center;
+  will-change: transform;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  image-rendering: auto;
+}
+
+.hydrantEnter {
+  animation:
+    hyEnter 3.28s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    hySettle 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 3.28s forwards;
+}
+
+.hydrantPulse {
+  transform: translate(-50%, -50%) scale(1);
+  animation: hyPulse 3.69s ease-in-out infinite;
+}
+
+/* ================================================================
+   HOVER ZONE — wraps breathing square for nav hover
+   ================================================================ */
+.hoverZone {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  z-index: 4;
+  cursor: pointer;
+}
+
+/* ================================================================
+   CLICK HINT
+   ================================================================ */
+.clickHint {
+  position: fixed;
+  top: calc(50% + 95px);
+  left: 50%;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  margin: 0;
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+/* ================================================================
+   ASK AI BUTTON
+   ================================================================ */
+.askBtn {
+  position: fixed;
+  top: calc(50% + 140px);
+  left: 50%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 14px 28px;
+  cursor: pointer;
+  white-space: nowrap;
+  z-index: 10;
+  transition: opacity 0.5s ease, transform 0.5s ease, background 0.15s;
+}
+
+.askBtn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* ================================================================
+   BLACK BOX — grows behind hydrant during chat
+   ================================================================ */
+.blackBox {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 185px;
+  height: 185px;
+  background: #0a0a0a;
+  border-radius: 16px;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.blackBoxStars {
+  position: absolute;
+  inset: 0;
+}
+
+.miniStar {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: twinkle 2s ease-in-out infinite alternate;
+}
+
+/* ================================================================
+   MENU — slides out from the black box
+   ================================================================ */
+.menuSide {
+  position: fixed;
+  top: 50%;
+  left: calc(50% + 112px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 12;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.menuBtn {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.menuBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateX(3px);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.menuBtn:active {
+  transform: scale(0.96);
+}
+
+/* ================================================================
+   CHAT AREA — scrollable with hidden scrollbar
+   ================================================================ */
+.chatWrap {
+  position: fixed;
+  top: calc(50% + 130px);
+  left: 50%;
+  width: 100%;
+  max-width: 560px;
+  z-index: 10;
+  padding: 0 16px 40px;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+/* ================================================================
+   KEYFRAMES
+   ================================================================ */
+
+/* Square: 0 → 1.15, settle → 1.0, pulse 1.0 ↔ 1.15 */
+@keyframes sqEnter {
+  0%   { transform: translate(-50%, -50%) scale(0); }
+  100% { transform: translate(-50%, -50%) scale(1.15); }
+}
+@keyframes sqSettle {
+  0%   { transform: translate(-50%, -50%) scale(1.15); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes sqPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* Hydrant: 0 → 0.7, settle → 1.0, inverse pulse 1.0 ↔ 0.85 */
+@keyframes hyEnter {
+  0%   { transform: translate(-50%, -50%) scale(0); }
+  100% { transform: translate(-50%, -50%) scale(0.7); }
+}
+@keyframes hySettle {
+  0%   { transform: translate(-50%, -50%) scale(0.7); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes hyPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(0.85); }
+}
+
+@keyframes twinkle {
+  0%   { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* ================================================================
+   MOBILE
+   ================================================================ */
+@media (max-width: 768px) {
+  .redSquare { width: 130px; height: 130px; }
+  .hydrant { width: 105px; }
+  .hoverZone { width: 170px; height: 170px; }
+  .clickHint { top: calc(50% + 82px); }
+  .askBtn { top: calc(50% + 115px); font-size: 14px; padding: 12px 22px; }
+  .blackBox { width: 155px; height: 155px; }
+  .menuSide { left: calc(50% + 92px); }
+  .chatWrap { top: calc(50% + 110px); }
+}
+
+@media (max-width: 480px) {
+  .redSquare { width: 110px; height: 110px; }
+  .hydrant { width: 85px; }
+  .clickHint { top: calc(50% + 70px); }
+  .askBtn { top: calc(50% + 98px); font-size: 13px; padding: 10px 18px; }
+  .blackBox { width: 130px; height: 130px; }
+  .menuSide { left: calc(50% + 78px); }
+  .chatWrap { top: calc(50% + 95px); max-height: calc(50vh - 20px); }
+}
