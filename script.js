@@ -1242,6 +1242,8 @@ if (document.readyState === "loading") {
     createStars();
     init();
     preloadHeroAssets().finally(() => {
+      document.documentElement.classList.remove('hero-assets-pending');
+      document.documentElement.classList.add('hero-assets-loaded');
       document.documentElement.classList.add('hero-ready');
       setupHoverEffect();
     });
@@ -1250,6 +1252,8 @@ if (document.readyState === "loading") {
   createStars();
   init();
   preloadHeroAssets().finally(() => {
+    document.documentElement.classList.remove('hero-assets-pending');
+    document.documentElement.classList.add('hero-assets-loaded');
     document.documentElement.classList.add('hero-ready');
     setupHoverEffect();
   });
