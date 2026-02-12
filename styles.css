@@ -674,9 +674,9 @@ html.hero-ready .red-square {
   user-select: none;
   transform-origin: center center;
   opacity: 1;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  will-change: auto;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
   pointer-events: none;
   position: absolute;
   top: 50%;
