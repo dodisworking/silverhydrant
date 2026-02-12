@@ -53,8 +53,9 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 130px;
-  height: auto;
+  width: 260px;
+  height: 260px;
+  object-fit: contain;
   transform: translate(-50%, -50%) scale(0);
   transform-origin: center center;
   will-change: transform;
@@ -72,7 +73,7 @@
 }
 
 .hydrantPulse {
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%) scale(0.5);
   animation: hyPulse 3.69s ease-in-out infinite;
 }
 
@@ -237,18 +238,18 @@
   50%      { transform: translate(-50%, -50%) scale(1.15); }
 }
 
-/* Hydrant: 0 → 0.7, settle → 1.0, inverse pulse 1.0 ↔ 0.85 */
+/* Hydrant: supersample 2x — render at 260px, halve scales for same visual size */
 @keyframes hyEnter {
   0%   { transform: translate(-50%, -50%) scale(0); }
-  100% { transform: translate(-50%, -50%) scale(0.7); }
+  100% { transform: translate(-50%, -50%) scale(0.35); }
 }
 @keyframes hySettle {
-  0%   { transform: translate(-50%, -50%) scale(0.7); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0%   { transform: translate(-50%, -50%) scale(0.35); }
+  100% { transform: translate(-50%, -50%) scale(0.5); }
 }
 @keyframes hyPulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50%      { transform: translate(-50%, -50%) scale(0.85); }
+  0%, 100% { transform: translate(-50%, -50%) scale(0.5); }
+  50%      { transform: translate(-50%, -50%) scale(0.425); }
 }
 
 @keyframes twinkle {
@@ -261,7 +262,7 @@
    ================================================================ */
 @media (max-width: 768px) {
   .redSquare { width: 130px; height: 130px; }
-  .hydrant { width: 105px; }
+  .hydrant { width: 210px; height: 210px; }
   .hoverZone { width: 170px; height: 170px; }
   .clickHint { top: calc(50% + 82px); }
   .askBtn { top: calc(50% + 115px); font-size: 14px; padding: 12px 22px; }
@@ -272,7 +273,7 @@
 
 @media (max-width: 480px) {
   .redSquare { width: 110px; height: 110px; }
-  .hydrant { width: 85px; }
+  .hydrant { width: 170px; height: 170px; }
   .clickHint { top: calc(50% + 70px); }
   .askBtn { top: calc(50% + 98px); font-size: 13px; padding: 10px 18px; }
   .blackBox { width: 130px; height: 130px; }

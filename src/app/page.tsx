@@ -66,7 +66,7 @@ export default function HomePage() {
     sq.style.transform = "translate(-50%, -50%) scale(18)";
 
     hy.style.transition = "transform 3s cubic-bezier(0.4, 0, 0.2, 1)";
-    hy.style.transform = "translate(-50%, -50%) scale(2)";
+    hy.style.transform = "translate(-50%, -50%) scale(1)";
 
     setTimeout(() => {
       setPhase("finalScreen");
