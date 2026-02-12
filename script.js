@@ -1808,9 +1808,16 @@ function showHydrantMenu() {
   // Position and show the menu dropdown to the right of the hydrant (185px / 2 = 92.5px + spacing)
   if (hydrantMenuDropdown) {
     hydrantMenuDropdown.style.position = 'fixed';
-    hydrantMenuDropdown.style.left = `${hydrantCenterX + 110}px`; // To the right of the square
-    hydrantMenuDropdown.style.top = `${hydrantCenterY}px`;
-    hydrantMenuDropdown.style.transform = 'translateY(-50%)';
+    if (window.innerWidth <= 768) {
+      // On mobile, place dropdown below icon and center it to avoid clipping.
+      hydrantMenuDropdown.style.left = '50%';
+      hydrantMenuDropdown.style.top = `${Math.round(hydrantCenterY + 118)}px`;
+      hydrantMenuDropdown.style.transform = 'translateX(-50%)';
+    } else {
+      hydrantMenuDropdown.style.left = `${hydrantCenterX + 110}px`; // To the right of the square
+      hydrantMenuDropdown.style.top = `${hydrantCenterY}px`;
+      hydrantMenuDropdown.style.transform = 'translateY(-50%)';
+    }
     hydrantMenuDropdown.style.zIndex = '10004';
     hydrantMenuDropdown.style.display = 'flex';
   }
