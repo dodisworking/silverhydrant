@@ -91,43 +91,47 @@ export default function HomePage() {
     setTimeout(() => setShowMenu(true), 3000);
   }, []);
 
-  /* ---- Auto-push during typing ---- */
+  /* ---- Auto-push during typing (smooth rAF loop) ---- */
+  const targetOffset = useRef(0);
+  const rafId = useRef(0);
+
   useEffect(() => {
     if (!showChat || typingDone) return;
 
-    function pushDown() {
-      if (!chatWrapRef.current || !sceneRef.current) return;
-      const rect = chatWrapRef.current.getBoundingClientRect();
-      const viewportH = window.innerHeight;
-      const needed = Math.max(0, rect.bottom - viewportH + 24);
+    let running = true;
 
-      if (needed > 1) {
-        currentOffset.current += needed;
-        sceneRef.current.style.transition = "transform 0.15s ease-out";
-        sceneRef.current.style.transform = `translateY(-${currentOffset.current}px)`;
+    function tick() {
+      if (!running) return;
+
+      if (chatWrapRef.current && sceneRef.current) {
+        const rect = chatWrapRef.current.getBoundingClientRect();
+        const overflow = rect.bottom - window.innerHeight + 24;
+
+        if (overflow > 0) {
+          targetOffset.current = currentOffset.current + overflow;
+        }
+
+        /* Lerp toward target for smooth motion */
+        const diff = targetOffset.current - currentOffset.current;
+        if (Math.abs(diff) > 0.5) {
+          currentOffset.current += diff * 0.18;
+          sceneRef.current.style.transform = `translateY(-${currentOffset.current}px)`;
+        }
       }
+
+      rafId.current = requestAnimationFrame(tick);
     }
 
-    /* MutationObserver for DOM changes */
-    const mo = new MutationObserver(pushDown);
-    const ro = new ResizeObserver(pushDown);
-
-    if (chatWrapRef.current) {
-      mo.observe(chatWrapRef.current, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-      ro.observe(chatWrapRef.current);
+    /* Remove CSS transition — JS handles smoothing now */
+    if (sceneRef.current) {
+      sceneRef.current.style.transition = "none";
     }
 
-    /* Polling fallback — catches rAF innerHTML updates the observer may miss */
-    const poll = setInterval(pushDown, 120);
+    rafId.current = requestAnimationFrame(tick);
 
     return () => {
-      mo.disconnect();
-      ro.disconnect();
-      clearInterval(poll);
+      running = false;
+      cancelAnimationFrame(rafId.current);
     };
   }, [showChat, typingDone]);
 
