@@ -278,5 +278,5 @@
   .askBtn { top: calc(50% + 98px); font-size: 13px; padding: 10px 18px; }
   .blackBox { width: 130px; height: 130px; }
   .menuSide { left: calc(50% + 78px); }
-  .chatWrap { top: calc(50% + 95px); max-height: calc(50vh - 20px); }
+  .chatWrap { top: calc(50% + 95px); }
 }

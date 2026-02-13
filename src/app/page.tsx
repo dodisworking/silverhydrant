@@ -91,47 +91,39 @@ export default function HomePage() {
     setTimeout(() => setShowMenu(true), 3000);
   }, []);
 
-  /* ---- Auto-push during typing (smooth rAF loop) ---- */
-  const targetOffset = useRef(0);
-  const rafId = useRef(0);
-
+  /* ---- Auto-push during typing ---- */
   useEffect(() => {
     if (!showChat || typingDone) return;
 
-    let running = true;
+    function pushToBottom() {
+      if (!chatWrapRef.current || !sceneRef.current) return;
+      const rect = chatWrapRef.current.getBoundingClientRect();
+      const overflow = rect.bottom - window.innerHeight + 32;
 
-    function tick() {
-      if (!running) return;
-
-      if (chatWrapRef.current && sceneRef.current) {
-        const rect = chatWrapRef.current.getBoundingClientRect();
-        const overflow = rect.bottom - window.innerHeight + 24;
-
-        if (overflow > 0) {
-          targetOffset.current = currentOffset.current + overflow;
-        }
-
-        /* Lerp toward target for smooth motion */
-        const diff = targetOffset.current - currentOffset.current;
-        if (Math.abs(diff) > 0.5) {
-          currentOffset.current += diff * 0.18;
-          sceneRef.current.style.transform = `translateY(-${currentOffset.current}px)`;
-        }
+      if (overflow > 2) {
+        currentOffset.current += overflow;
+        sceneRef.current.style.transition = "transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)";
+        sceneRef.current.style.transform = `translateY(-${currentOffset.current}px)`;
       }
-
-      rafId.current = requestAnimationFrame(tick);
     }
 
-    /* Remove CSS transition — JS handles smoothing now */
-    if (sceneRef.current) {
-      sceneRef.current.style.transition = "none";
+    /* Use rAF polling at ~30fps for reliable tracking */
+    let running = true;
+    let lastTime = 0;
+
+    function tick(now: number) {
+      if (!running) return;
+      if (now - lastTime > 33) {
+        lastTime = now;
+        pushToBottom();
+      }
+      requestAnimationFrame(tick);
     }
 
-    rafId.current = requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
 
     return () => {
       running = false;
-      cancelAnimationFrame(rafId.current);
     };
   }, [showChat, typingDone]);
 
