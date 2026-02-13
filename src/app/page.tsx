@@ -95,24 +95,22 @@ export default function HomePage() {
   useEffect(() => {
     if (!showChat || typingDone) return;
 
-    function checkOverflow() {
-      requestAnimationFrame(() => {
-        if (!chatWrapRef.current || !sceneRef.current) return;
-        const rect = chatWrapRef.current.getBoundingClientRect();
-        const bottomInScene = rect.bottom + currentOffset.current;
-        const viewportH = window.innerHeight;
-        const needed = Math.max(0, bottomInScene - viewportH + 40);
+    function pushDown() {
+      if (!chatWrapRef.current || !sceneRef.current) return;
+      const rect = chatWrapRef.current.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const needed = Math.max(0, rect.bottom - viewportH + 24);
 
-        if (needed > currentOffset.current + 3) {
-          currentOffset.current = needed;
-          sceneRef.current.style.transition = "transform 0.3s ease-out";
-          sceneRef.current.style.transform = `translateY(-${needed}px)`;
-        }
-      });
+      if (needed > 1) {
+        currentOffset.current += needed;
+        sceneRef.current.style.transition = "transform 0.15s ease-out";
+        sceneRef.current.style.transform = `translateY(-${currentOffset.current}px)`;
+      }
     }
 
-    const mo = new MutationObserver(checkOverflow);
-    const ro = new ResizeObserver(checkOverflow);
+    /* MutationObserver for DOM changes */
+    const mo = new MutationObserver(pushDown);
+    const ro = new ResizeObserver(pushDown);
 
     if (chatWrapRef.current) {
       mo.observe(chatWrapRef.current, {
@@ -123,9 +121,13 @@ export default function HomePage() {
       ro.observe(chatWrapRef.current);
     }
 
+    /* Polling fallback — catches rAF innerHTML updates the observer may miss */
+    const poll = setInterval(pushDown, 120);
+
     return () => {
       mo.disconnect();
       ro.disconnect();
+      clearInterval(poll);
     };
   }, [showChat, typingDone]);
 
