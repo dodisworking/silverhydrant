@@ -95,36 +95,21 @@ export default function HomePage() {
   useEffect(() => {
     if (!showChat || typingDone) return;
 
-    function pushToBottom() {
+    /* Check every 150ms — batches multiple chars into one smooth glide */
+    const iv = setInterval(() => {
       if (!chatWrapRef.current || !sceneRef.current) return;
       const rect = chatWrapRef.current.getBoundingClientRect();
       const overflow = rect.bottom - window.innerHeight + 32;
 
       if (overflow > 2) {
         currentOffset.current += overflow;
-        sceneRef.current.style.transition = "transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)";
+        sceneRef.current.style.transition =
+          "transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)";
         sceneRef.current.style.transform = `translateY(-${currentOffset.current}px)`;
       }
-    }
+    }, 150);
 
-    /* Use rAF polling at ~30fps for reliable tracking */
-    let running = true;
-    let lastTime = 0;
-
-    function tick(now: number) {
-      if (!running) return;
-      if (now - lastTime > 33) {
-        lastTime = now;
-        pushToBottom();
-      }
-      requestAnimationFrame(tick);
-    }
-
-    requestAnimationFrame(tick);
-
-    return () => {
-      running = false;
-    };
+    return () => clearInterval(iv);
   }, [showChat, typingDone]);
 
   /* ---- Manual scroll after typing finishes (no scrollbar) ---- */
